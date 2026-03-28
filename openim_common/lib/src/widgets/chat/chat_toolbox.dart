@@ -1,0 +1,173 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:openim_common/openim_common.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class ChatToolBox extends StatelessWidget {
+  const ChatToolBox({
+    Key? key,
+    this.onTapAlbum,
+    this.onTapCall,
+    this.onTapCamera,
+    this.onTapCard,
+    this.onTapFile,
+    this.onTapLocation,
+    this.onTapRedPacket,
+  }) : super(key: key);
+  final Function()? onTapAlbum;
+  final Function()? onTapCamera;
+  final Function()? onTapCall;
+  final Function()? onTapFile;
+  final Function()? onTapCard;
+  final Function()? onTapLocation;
+  final Function()? onTapRedPacket;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      ToolboxItemInfo(
+        text: StrRes.toolboxAlbum,
+        icon: ImageRes.toolboxAlbum,
+        onTap: () {
+          if (Platform.isAndroid) {
+            Permissions.storage(onTapAlbum);
+          } else {
+            Permissions.photos(onTapAlbum);
+          }
+        },
+      ),
+      ToolboxItemInfo(
+        text: StrRes.toolboxCamera,
+        icon: ImageRes.toolboxCamera,
+        onTap: () => Permissions.camera(onTapCamera),
+      ),
+      ToolboxItemInfo(
+        text: StrRes.toolboxCall,
+        icon: ImageRes.toolboxCall,
+        onTap: () => Permissions.cameraAndMicrophone(onTapCall),
+      ),
+      ToolboxItemInfo(
+        text: StrRes.toolboxFile,
+        icon: ImageRes.toolboxFile,
+        onTap: () => Permissions.storage(onTapFile),
+      ),
+      ToolboxItemInfo(
+          text: StrRes.toolboxCard,
+          icon: ImageRes.toolboxCard,
+          onTap: onTapCard),
+      ToolboxItemInfo(
+        text: StrRes.toolboxLocation,
+        icon: ImageRes.toolboxLocation,
+        onTap: () => Permissions.location(onTapLocation),
+      ),
+      ToolboxItemInfo(
+        text: "红包",
+        icon: "assets/images/red_packet.png",
+        onTap: onTapRedPacket,
+      ),
+    ];
+
+    final validItems = items.where((element) {
+      if (element.text == StrRes.toolboxCall && onTapCall == null) return false;
+      if (element.text == "红包" && onTapRedPacket == null) return false;
+      // [MOD] 隐藏位置按钮
+      if (element.text == StrRes.toolboxLocation) return false;
+      return true;
+    }).toList();
+
+    return Container(
+      color: Styles.c_F0F2F6,
+      height: 224.h,
+      child: GridView.builder(
+        itemCount: validItems.length,
+        padding: EdgeInsets.only(
+          left: 16.w,
+          right: 16.w,
+          top: 6.h,
+          bottom: 6.h,
+        ),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          childAspectRatio: 78.w / 105.h,
+          crossAxisSpacing: 10.w,
+          mainAxisSpacing: 2.h,
+        ),
+        itemBuilder: (_, index) {
+          final item = validItems.elementAt(index);
+          return _buildItemView(
+            icon: item.icon,
+            text: item.text,
+            onTap: item.onTap,
+          );
+        },
+      ),
+      // child: Column(
+      //   children: [
+      //     Row(
+      //       children: [
+      //         _buildItemView(
+      //             text: StrRes.toolboxAlbum,
+      //             icon: ImageRes.toolboxAlbum,
+      //             onTap: onTapAlbum),
+      //         30.horizontalSpace,
+      //         _buildItemView(
+      //             text: StrRes.toolboxCamera,
+      //             icon: ImageRes.toolboxCamera,
+      //             onTap: onTapCamera),
+      //         30.horizontalSpace,
+      //         _buildItemView(
+      //             text: StrRes.toolboxCall,
+      //             icon: ImageRes.toolboxCall,
+      //             onTap: onTapCall),
+      //         30.horizontalSpace,
+      //         _buildItemView(
+      //             text: StrRes.toolboxFile,
+      //             icon: ImageRes.toolboxFile,
+      //             onTap: onTapFile),
+      //       ],
+      //     ),
+      //     22.verticalSpace,
+      //     Row(
+      //       children: [
+      //         _buildItemView(
+      //             text: StrRes.toolboxCard,
+      //             icon: ImageRes.toolboxCard,
+      //             onTap: onTapCard),
+      //         30.horizontalSpace,
+      //         _buildItemView(
+      //             text: StrRes.toolboxLocation,
+      //             icon: ImageRes.toolboxLocation,
+      //             onTap: onTapLocation),
+      //       ],
+      //     ),
+      //   ],
+      // ),
+    );
+  }
+
+  Widget _buildItemView({
+    required String text,
+    required String icon,
+    Function()? onTap,
+  }) =>
+      Column(
+        children: [
+          icon.toImage
+            ..width = 58.w
+            ..height = 58.h
+            ..onTap = onTap,
+          10.verticalSpace,
+          text.toText..style = Styles.ts_0C1C33_12sp,
+        ],
+      );
+}
+
+class ToolboxItemInfo {
+  String text;
+  String icon;
+  Function()? onTap;
+
+  ToolboxItemInfo({required this.text, required this.icon, this.onTap});
+}

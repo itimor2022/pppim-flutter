@@ -1,0 +1,164 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    // id "com.google.gms.google-services"
+    // id "com.huawei.agconnect"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '39'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '3.5.1'
+}
+
+android {
+    namespace 'io.openim.flutter.rtc'
+    compileSdkVersion 34
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    defaultConfig {
+        applicationId "io.openim.flutter.rtc"
+        minSdkVersion 24
+        targetSdkVersion 30
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        multiDexEnabled true
+
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+
+        lintOptions {
+            disable 'InvalidPackage'
+            disable "Instantiatable"
+            checkReleaseBuilds false
+            abortOnError false
+        }
+
+        manifestPlaceholders = [
+                GETUI_APPID    : "",
+                XIAOMI_APP_ID  : "",
+                XIAOMI_APP_KEY : "",
+                MEIZU_APP_ID   : "",
+                MEIZU_APP_KEY  : "",
+                HUAWEI_APP_ID  : "",
+                OPPO_APP_KEY   : "",
+                OPPO_APP_SECRET: "",
+                VIVO_APP_ID    : "",
+                VIVO_APP_KEY   : "",
+                HONOR_APP_ID   : "",
+        ]
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'openim'
+            keyPassword 'openim'
+            storeFile file('./openim')
+            storePassword 'openim'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.release
+        }
+        profile {
+            signingConfig signingConfigs.release
+        }
+        release {
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "IM-FCER_${flutterVersionName}(${flutterVersionCode})_${buildType.name}_${buildTime()}.apk"
+        }
+    }
+
+    packagingOptions {
+        pickFirst 'lib/arm64-v8a/libgojni.so'
+        pickFirst 'lib/armeabi-v7a/libgojni.so'
+        pickFirst 'lib/x86/libgojni.so'
+        pickFirst 'lib/x86_64/libgojni.so'
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        pickFirst 'lib/x86/libc++_shared.so'
+        pickFirst 'lib/x86_64/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libavcodec.so'
+        pickFirst 'lib/arm64-v8a/libavformat.so'
+        pickFirst 'lib/arm64-v8a/libavutil.so'
+        pickFirst 'lib/arm64-v8a/libswscale.so'
+        pickFirst 'lib/arm64-v8a/libavdevice.so'
+        pickFirst 'lib/arm64-v8a/libavfilter.so'
+        pickFirst 'lib/arm64-v8a/libffmpegkit.so'
+        pickFirst 'lib/arm64-v8a/libffmpegkit_abidetect.so'
+        pickFirst 'lib/arm64-v8a/libswresample.so'
+        pickFirst 'lib/x86/libavcodec.so'
+        pickFirst 'lib/x86/libavformat.so'
+        pickFirst 'lib/x86/libavutil.so'
+        pickFirst 'lib/x86/libswscale.so'
+        pickFirst 'lib/x86/libavdevice.so'
+        pickFirst 'lib/x86/libavfilter.so'
+        pickFirst 'lib/x86/libffmpegkit.so'
+        pickFirst 'lib/x86/libffmpegkit_abidetect.so'
+        pickFirst 'lib/x86/libswresample.so'
+        pickFirst 'lib/x86_64/libavcodec.so'
+        pickFirst 'lib/x86_64/libavformat.so'
+        pickFirst 'lib/x86_64/libavutil.so'
+        pickFirst 'lib/x86_64/libswscale.so'
+        pickFirst 'lib/x86_64/libavdevice.so'
+        pickFirst 'lib/x86_64/libavfilter.so'
+        pickFirst 'lib/x86_64/libffmpegkit.so'
+        pickFirst 'lib/x86_64/libffmpegkit_abidetect.so'
+        pickFirst 'lib/x86_64/libswresample.so'
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    // 个推
+    implementation 'com.huawei.hms:push:5.3.0.301'
+    implementation 'com.getui.opt:hwp:3.1.0'   // 华为
+    implementation 'com.getui.opt:xmp:3.2.0'   // 小米
+    implementation('com.assist-v3:oppo:3.1.0') {
+        exclude group: 'commons-codec'
+    }   // oppo
+    implementation 'com.assist-v3:vivo:3.1.0'  // vivo
+    implementation 'com.getui.opt:mzp:3.2.0'   // 魅族
+    implementation 'com.getui.opt:ups:3.0.3'   // ups
+    implementation 'com.getui.opt:honor:3.2.0' // 荣耀
+    implementation 'com.android.support:multidex:1.0.3'
+}
+
+static def buildTime() {
+    return new Date().format("MMddHHmm", TimeZone.getTimeZone("GMT+08:00"))
+}

@@ -1,0 +1,34 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+*.log
+
+# 生成文件（若有）
+*.g.dart
+*.freezed.dart
+
+# Android 宿主（根 .gitignore 补充）
+android/build/
+android/.gradle/
+android/local.properties
+
+# iOS 宿主（根 .gitignore 补充）
+ios/Pods/
+ios/Flutter/ephemeral/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/.symlinks/

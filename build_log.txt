@@ -1,0 +1,187 @@
+I/flutter (12203): ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): │ [http-request] [POST] http://45.207.197.18:10008/RedPacketService/GetRedPacketDetail
+I/flutter (12203): │ Data: {
+I/flutter (12203): │   "packet_id": "2035405692294139904",
+I/flutter (12203): │   "user_id": "5851615477"
+I/flutter (12203): │ }
+I/flutter (12203): │ Headers: {
+I/flutter (12203): │   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiI1ODUxNjE1NDc3IiwiVXNlclR5cGUiOjEsIlBsYXRmb3JtSUQiOjAsImV4cCI6OTIzOTA3MzA2MSwibmJmIjoxNzc0MTEyNzYxLCJpYXQiOjE3NzQxMTMwNjF9.A_sQ50GiXBkUK87uUQh2QcniwEakPdd7z_DrBnEX19s",
+I/flutter (12203): │   "operationID": "1774113599027",
+I/flutter (12203): │   "content-type": "application/json"
+I/flutter (12203): │ }
+I/flutter (12203): └──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): │ [http-response] [POST] http://45.207.197.18:10008/RedPacketService/GetRedPacketDetail
+I/flutter (12203): │ Status: 200
+I/flutter (12203): │ Message: OK
+I/flutter (12203): │ Data: {
+I/flutter (12203): │   "errCode": 0,
+I/flutter (12203): │   "errMsg": "",
+I/flutter (12203): │   "errDlt": "",
+I/flutter (12203): │   "data": {
+I/flutter (12203): │     "packet_id": "2035405692294139904",
+I/flutter (12203): │     "sender_id": "5851615477",
+I/flutter (12203): │     "type": 6,
+I/flutter (12203): │     "total_amount": "6700",
+I/flutter (12203): │     "total_count": 4,
+I/flutter (12203): │     "remain_amount": "6700",
+I/flutter (12203): │     "remain_count": 4,
+I/flutter (12203): │     "status": 1,
+I/flutter (12203): │     "create_time": "2026-03-22 01:18:27",
+I/flutter (12203): │     "expire_time": "1774199907",
+I/flutter (12203): │     "mine_nums": "1",
+I/flutter (12203): │     "odds": "1.5"
+I/flutter (12203): │   }
+I/flutter (12203): │ }
+I/flutter (12203): │ Headers: {
+I/flutter (12203): │   "access-control-allow-credentials": [
+I/flutter (12203): │     "false"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-headers": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "date": [
+I/flutter (12203): │     "Sat, 21 Mar 2026 17:20:07 GMT"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-origin": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-methods": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "content-length": [
+I/flutter (12203): │     "295"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-expose-headers": [
+I/flutter (12203): │     "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers,Cache-Control,Content-Language,Content-Type,Expires,Last-Modified,Pragma,FooBar"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-max-age": [
+I/flutter (12203): │     "172800"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "content-type": [
+I/flutter (12203): │     "application/json"
+I/flutter (12203): │   ]
+I/flutter (12203): │ }
+I/flutter (12203): └──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[OpenIM-App] ** OPEN DIALOG 686027918, isError [false]
+I/flutter (12203): ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): │ [http-request] [POST] http://45.207.197.18:10008/RedPacketService/GrabRedPacket
+I/flutter (12203): │ Data: {
+I/flutter (12203): │   "packet_id": "2035405692294139904",
+I/flutter (12203): │   "user_id": "5851615477"
+I/flutter (12203): │ }
+I/flutter (12203): │ Headers: {
+I/flutter (12203): │   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiI1ODUxNjE1NDc3IiwiVXNlclR5cGUiOjEsIlBsYXRmb3JtSUQiOjAsImV4cCI6OTIzOTA3MzA2MSwibmJmIjoxNzc0MTEyNzYxLCJpYXQiOjE3NzQxMTMwNjF9.A_sQ50GiXBkUK87uUQh2QcniwEakPdd7z_DrBnEX19s",
+I/flutter (12203): │   "operationID": "1774113601347",
+I/flutter (12203): │   "content-type": "application/json"
+I/flutter (12203): │ }
+I/flutter (12203): └──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): │ [http-response] [POST] http://45.207.197.18:10008/RedPacketService/GrabRedPacket
+I/flutter (12203): │ Status: 200
+I/flutter (12203): │ Message: OK
+I/flutter (12203): │ Data: {
+I/flutter (12203): │   "errCode": 20018,
+I/flutter (12203): │   "errMsg": "您已领取过该红包",
+I/flutter (12203): │   "errDlt": ": 20018 您已领取过该红包"
+I/flutter (12203): │ }
+I/flutter (12203): │ Headers: {
+I/flutter (12203): │   "access-control-allow-credentials": [
+I/flutter (12203): │     "false"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-headers": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "date": [
+I/flutter (12203): │     "Sat, 21 Mar 2026 17:20:09 GMT"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-origin": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-methods": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "content-length": [
+I/flutter (12203): │     "97"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-expose-headers": [
+I/flutter (12203): │     "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers,Cache-Control,Content-Language,Content-Type,Expires,Last-Modified,Pragma,FooBar"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-max-age": [
+I/flutter (12203): │     "172800"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "content-type": [
+I/flutter (12203): │     "application/json"
+I/flutter (12203): │   ]
+I/flutter (12203): │ }
+I/flutter (12203): └──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[OpenIM-App] ** CLOSE DIALOG 686027918, isError [false]
+[OpenIM-App] ** GOING TO ROUTE /red_packet_records, isError [false]
+[OpenIM-App] ** Instance "RedPacketRecordsController" has been created, isError [false]
+[OpenIM-App] ** Instance "RedPacketRecordsController" has been initialized, isError [false]
+I/flutter (12203): ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): │ [http-request] [POST] http://45.207.197.18:10008/RedPacketService/GetRedPacketDetail
+I/flutter (12203): │ Data: {
+I/flutter (12203): │   "packet_id": "2035405692294139904",
+I/flutter (12203): │   "user_id": "5851615477"
+I/flutter (12203): │ }
+I/flutter (12203): │ Headers: {
+I/flutter (12203): │   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOiI1ODUxNjE1NDc3IiwiVXNlclR5cGUiOjEsIlBsYXRmb3JtSUQiOjAsImV4cCI6OTIzOTA3MzA2MSwibmJmIjoxNzc0MTEyNzYxLCJpYXQiOjE3NzQxMTMwNjF9.A_sQ50GiXBkUK87uUQh2QcniwEakPdd7z_DrBnEX19s",
+I/flutter (12203): │   "operationID": "1774113601477",
+I/flutter (12203): │   "content-type": "application/json"
+I/flutter (12203): │ }
+I/flutter (12203): └──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (12203): │ [http-response] [POST] http://45.207.197.18:10008/RedPacketService/GetRedPacketDetail
+I/flutter (12203): │ Status: 200
+I/flutter (12203): │ Message: OK
+I/flutter (12203): │ Data: {
+I/flutter (12203): │   "errCode": 0,
+I/flutter (12203): │   "errMsg": "",
+I/flutter (12203): │   "errDlt": "",
+I/flutter (12203): │   "data": {
+I/flutter (12203): │     "packet_id": "2035405692294139904",
+I/flutter (12203): │     "sender_id": "5851615477",
+I/flutter (12203): │     "type": 6,
+I/flutter (12203): │     "total_amount": "6700",
+I/flutter (12203): │     "total_count": 4,
+I/flutter (12203): │     "remain_amount": "6700",
+I/flutter (12203): │     "remain_count": 4,
+I/flutter (12203): │     "status": 1,
+I/flutter (12203): │     "create_time": "2026-03-22 01:18:27",
+I/flutter (12203): │     "expire_time": "1774199907",
+I/flutter (12203): │     "mine_nums": "1",
+I/flutter (12203): │     "odds": "1.5"
+I/flutter (12203): │   }
+I/flutter (12203): │ }
+I/flutter (12203): │ Headers: {
+I/flutter (12203): │   "access-control-allow-credentials": [
+I/flutter (12203): │     "false"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-headers": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "date": [
+I/flutter (12203): │     "Sat, 21 Mar 2026 17:20:09 GMT"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-origin": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-allow-methods": [
+I/flutter (12203): │     "*"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "content-length": [
+I/flutter (12203): │     "295"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-expose-headers": [
+I/flutter (12203): │     "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers,Cache-Control,Content-Language,Content-Type,Expires,Last-Modified,Pragma,FooBar"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "access-control-max-age": [
+I/flutter (12203): │     "172800"
+I/flutter (12203): │   ],
+I/flutter (12203): │   "content-type": [
+I/flutter (12203): │     "application/json"
+I/flutter (12203): │   ]
+I/flutter (12203): │ }
+I/flutter (12203): └──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/F-OpenIMSDK(flutter call native)(12203): { class:userManager,  method:getUsersInfo }
