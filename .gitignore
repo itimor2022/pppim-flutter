@@ -23,6 +23,7 @@ Thumbs.db
 
 # Android 宿主（根 .gitignore 补充）
 android/build/
+android/app/proguard/
 android/.gradle/
 android/local.properties
 

@@ -74,9 +74,12 @@ class LoginLogic extends GetxController {
   final isPasswordLogin = true.obs;
   final versionInfo = ''.obs;
   final loginType = LoginType.username.obs;
-  String? get email => loginType.value == LoginType.email ? phoneCtrl.text.trim() : null;
-  String? get phone => loginType.value == LoginType.phone ? phoneCtrl.text.trim() : null;
-  String? get account => loginType.value == LoginType.username ? phoneCtrl.text.trim() : null;
+  String? get email =>
+      loginType.value == LoginType.email ? phoneCtrl.text.trim() : null;
+  String? get phone =>
+      loginType.value == LoginType.phone ? phoneCtrl.text.trim() : null;
+  String? get account =>
+      loginType.value == LoginType.username ? phoneCtrl.text.trim() : null;
   LoginType operateType = LoginType.username;
 
   _initData() async {
@@ -129,8 +132,12 @@ class LoginLogic extends GetxController {
   }
 
   _onChanged() {
-    enabled.value = isPasswordLogin.value && phoneCtrl.text.trim().isNotEmpty && pwdCtrl.text.trim().isNotEmpty ||
-        !isPasswordLogin.value && phoneCtrl.text.trim().isNotEmpty && verificationCodeCtrl.text.trim().isNotEmpty;
+    enabled.value = isPasswordLogin.value &&
+            phoneCtrl.text.trim().isNotEmpty &&
+            pwdCtrl.text.trim().isNotEmpty ||
+        !isPasswordLogin.value &&
+            phoneCtrl.text.trim().isNotEmpty &&
+            verificationCodeCtrl.text.trim().isNotEmpty;
   }
 
   login() {
@@ -146,7 +153,8 @@ class LoginLogic extends GetxController {
 
   Future<bool> _login() async {
     try {
-      if (phone?.isNotEmpty == true && !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
+      if (phone?.isNotEmpty == true &&
+          !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
         IMViews.showToast(StrRes.plsEnterRightPhone);
         return false;
       }
@@ -165,7 +173,12 @@ class LoginLogic extends GetxController {
         password: isPasswordLogin.value ? password : null,
         verificationCode: isPasswordLogin.value ? null : code,
       );
-      final loginAccount = {"areaCode": areaCode.value, "phoneNumber": phone, "email": email, "account": phoneCtrl.text};
+      final loginAccount = {
+        "areaCode": areaCode.value,
+        "phoneNumber": phone,
+        "email": email,
+        "account": phoneCtrl.text
+      };
       await DataSp.putLoginCertificate(data);
       await DataSp.putLoginAccount(loginAccount);
       Logger.print('login : ${data.userID}, token: ${data.imToken}');
@@ -197,7 +210,8 @@ class LoginLogic extends GetxController {
   }
 
   Future<bool> getVerificationCode() async {
-    if (phone?.isNotEmpty == true && !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
+    if (phone?.isNotEmpty == true &&
+        !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
       IMViews.showToast(StrRes.plsEnterRightPhone);
       return false;
     }
@@ -237,8 +251,7 @@ class LoginLogic extends GetxController {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final version = packageInfo.version;
     final appName = packageInfo.appName;
-    final buildNumber = packageInfo.buildNumber;
 
-    versionInfo.value = '$appName $version+$buildNumber SDK: ${OpenIM.version}';
+    versionInfo.value = '$appName $version';
   }
 }
