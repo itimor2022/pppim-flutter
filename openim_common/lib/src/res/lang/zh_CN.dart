@@ -167,7 +167,7 @@ const Map<String, String> zh_CN = {
   "offlineCallMessage": "你收到了一条通话邀请消息",
   "logoutHint": "您确定要退出登录吗？",
   "myInfo": "我的信息",
-  "workingCircle": "工作圈",
+  "workingCircle": "朋友圈",
   "accountSetup": "账号设置",
   "aboutUs": "关于我们",
   "logout": "退出登录",
