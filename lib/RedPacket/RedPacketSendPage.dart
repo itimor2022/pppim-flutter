@@ -104,31 +104,31 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 ],
                               )),
                         ),
-                        InkWell(
-                          onTap: () {
-                            controller.index.value = 3;
-                            controller.onNo();
-                          },
-                          child: Obx(() => Column(
-                                children: [
-                                  DefaultText(
-                                    text: "扫雷",
-                                    textColor: controller.index.value == 3
-                                        ? Colors.black
-                                        : const Color(0xff939393),
-                                    fontSize: 16.sp,
-                                  ),
-                                  DefaultContainer(
-                                    margin: EdgeInsets.only(top: 8.w),
-                                    width: 44.w,
-                                    height: 2.w,
-                                    color: controller.index.value == 3
-                                        ? Colors.black
-                                        : Colors.transparent,
-                                  ),
-                                ],
-                              )),
-                        ),
+                        // InkWell(
+                        //   onTap: () {
+                        //     controller.index.value = 3;
+                        //     controller.onNo();
+                        //   },
+                        //   child: Obx(() => Column(
+                        //         children: [
+                        //           DefaultText(
+                        //             text: "扫雷",
+                        //             textColor: controller.index.value == 3
+                        //                 ? Colors.black
+                        //                 : const Color(0xff939393),
+                        //             fontSize: 16.sp,
+                        //           ),
+                        //           DefaultContainer(
+                        //             margin: EdgeInsets.only(top: 8.w),
+                        //             width: 44.w,
+                        //             height: 2.w,
+                        //             color: controller.index.value == 3
+                        //                 ? Colors.black
+                        //                 : Colors.transparent,
+                        //           ),
+                        //         ],
+                        //       )),
+                        // ),
                       ],
                     ),
                   ),
@@ -478,7 +478,8 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                           ),
 
                         Obx(() {
-                          bool isSweepMine = controller.index.value == 3 && !controller.isSingle;
+                          bool isSweepMine = controller.index.value == 3 &&
+                              !controller.isSingle;
                           return Container(
                             margin: EdgeInsets.only(
                               top: 10.w,

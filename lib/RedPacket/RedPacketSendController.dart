@@ -249,7 +249,7 @@ class RedPacketSendController extends GetxController {
                       Row(
                         children: [
                           Image.asset(
-                            'assets/images/209.webp',
+                            'assets/images/209.png',
                             width: 24.w,
                           ),
                           SizedBox(width: 5.w),
