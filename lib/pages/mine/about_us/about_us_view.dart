@@ -36,7 +36,7 @@ class AboutUsPage extends StatelessWidget {
                   ..width = 55.w
                   ..height = 78.h,
                 10.verticalSpace,
-                Obx(() => '${logic.appName} ${logic.version.value}+${logic.buildNumber.value} SDK: ${OpenIM.version}'.toText
+                Obx(() => '${logic.appName} ${logic.version.value}'.toText
                   ..style = Styles.ts_0C1C33_14sp),
                 16.verticalSpace,
                 Container(
@@ -53,7 +53,8 @@ class AboutUsPage extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 16.w),
                       child: Row(
                         children: [
-                          StrRes.checkNewVersion.toText..style = Styles.ts_0C1C33_17sp,
+                          StrRes.checkNewVersion.toText
+                            ..style = Styles.ts_0C1C33_17sp,
                           const Spacer(),
                           ImageRes.rightArrow.toImage
                             ..width = 24.w
@@ -62,7 +63,6 @@ class AboutUsPage extends StatelessWidget {
                       ),
                     ),
                   ),
-
                 GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: logic.uploadLogs,
@@ -71,7 +71,8 @@ class AboutUsPage extends StatelessWidget {
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
                     child: Row(
                       children: [
-                        StrRes.uploadErrorLog.toText..style = Styles.ts_0C1C33_17sp,
+                        StrRes.uploadErrorLog.toText
+                          ..style = Styles.ts_0C1C33_17sp,
                         const Spacer(),
                         ImageRes.rightArrow.toImage
                           ..width = 24.w

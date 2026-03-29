@@ -1,5 +1,5 @@
 const Map<String, String> zh_CN = {
-  "welcome": "欢迎使用OpenIM",
+  "welcome": "欢迎使用",
   "userID": "用户ID",
   "phoneNumber": "手机号",
   "plsEnterPhoneNumber": "请输入您的手机号",
@@ -40,7 +40,7 @@ const Map<String, String> zh_CN = {
   "loginPwdFormat": "6～20位，至少包含数字、字母",
   "passwordLogin": "密码登录",
   'through': '通过%s',
-  "home": "OpenIM",
+  "home": "消息",
   "contacts": "通讯录",
   "workbench": "发现",
   "mine": "我的",

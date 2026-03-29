@@ -23967,6 +23967,8 @@ io.flutter.embedding.engine.deferredcomponents.PlayStoreDeferredComponentManager
 io.flutter.embedding.engine.deferredcomponents.PlayStoreDeferredComponentManager:
     public static synthetic void $r8$lambda$I-sXVUxNIRBC-x6w9msYQS2uXNs(io.flutter.embedding.engine.deferredcomponents.PlayStoreDeferredComponentManager,int,java.lang.String,java.lang.Exception)
     public static synthetic void $r8$lambda$dJlyMzTJ21UbsaFL0xRQhc4YQvs(io.flutter.embedding.engine.deferredcomponents.PlayStoreDeferredComponentManager,java.lang.String,int,java.lang.Integer)
+io.idouyin.xchat100.BuildConfig
+io.idouyin.xchat100.R
 io.livekit.plugin.BuildConfig
 io.livekit.plugin.R
 javax.inject.Inject

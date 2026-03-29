@@ -25,7 +25,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace 'io.openim.flutter.rtc'
+    namespace 'io.idouyin.xchat100'
     compileSdkVersion 34
     ndkVersion flutter.ndkVersion
 
@@ -39,7 +39,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "io.openim.flutter.rtc"
+        applicationId "io.idouyin.xchat100"
         minSdkVersion 24
         targetSdkVersion 30
         versionCode flutterVersionCode.toInteger()
