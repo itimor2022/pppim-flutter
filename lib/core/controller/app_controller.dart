@@ -23,11 +23,13 @@ class AppController extends SuperController with UpgradeManger {
 
   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  final initializationSettingsAndroid = const AndroidInitializationSettings('@mipmap/ic_launcher');
+  final initializationSettingsAndroid =
+      const AndroidInitializationSettings('@mipmap/ic_launcher');
 
   /// Note: permissions aren't requested here just to demonstrate that can be
   /// done later
-  final DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
     requestAlertPermission: false,
     requestBadgePermission: false,
     requestSoundPermission: false,
@@ -43,7 +45,8 @@ class AppController extends SuperController with UpgradeManger {
 
   RTCBridge? rtcBridge = PackageBridge.rtcBridge;
 
-  bool get shouldMuted => meetingBridge?.hasConnection == true || rtcBridge?.hasConnection == true;
+  bool get shouldMuted =>
+      meetingBridge?.hasConnection == true || rtcBridge?.hasConnection == true;
 
   final _ring = 'assets/audio/message_ring.wav';
   final _audioPlayer = AudioPlayer(
@@ -93,24 +96,35 @@ class AppController extends SuperController with UpgradeManger {
   }
 
   void _requestPermissions() {
-    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
-    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
           alert: true,
           badge: true,
           sound: true,
         );
   }
 
-  Future<void> showNotification(im.Message message, {bool showNotification = true}) async {
+  Future<void> showNotification(im.Message message,
+      {bool showNotification = true}) async {
     if (_isGlobalNotDisturb() ||
             message.attachedInfoElem?.notSenderNotificationPush == true ||
             message.contentType == im.MessageType.typing ||
-            message.sendID == OpenIM.iMManager.userID /* ||
+            message.sendID ==
+                OpenIM.iMManager
+                    .userID /* ||
         message.contentType! >= 1000*/
         ) return;
 
     // 开启免打扰的不提示
-    var sourceID = message.sessionType == ConversationType.single ? message.sendID : message.groupID;
+    var sourceID = message.sessionType == ConversationType.single
+        ? message.sendID
+        : message.groupID;
     if (sourceID != null && message.sessionType != null) {
       var i = await OpenIM.iMManager.conversationManager.getOneConversation(
         sourceID: sourceID,
@@ -131,10 +145,17 @@ class AppController extends SuperController with UpgradeManger {
       if (Platform.isAndroid) {
         final id = seq;
 
-        const androidPlatformChannelSpecifics = AndroidNotificationDetails('chat', 'OpenIM聊天消息',
-            channelDescription: '来自OpenIM的信息', importance: Importance.max, priority: Priority.high, ticker: 'ticker');
-        const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
-        await flutterLocalNotificationsPlugin.show(id, '您收到了一条新消息', '消息内容：.....', platformChannelSpecifics, payload: '');
+        const androidPlatformChannelSpecifics = AndroidNotificationDetails(
+            'chat', 'OpenIM聊天消息',
+            channelDescription: '来自OpenIM的信息',
+            importance: Importance.max,
+            priority: Priority.high,
+            ticker: 'ticker');
+        const NotificationDetails platformChannelSpecifics =
+            NotificationDetails(android: androidPlatformChannelSpecifics);
+        await flutterLocalNotificationsPlugin.show(
+            id, '您收到了一条新消息', '消息内容：.....', platformChannelSpecifics,
+            payload: '');
       }
     }
   }
@@ -145,16 +166,25 @@ class AppController extends SuperController with UpgradeManger {
 
   Future<void> _startForegroundService() async {
     await getAppInfo();
-    const androidPlatformChannelSpecifics = AndroidNotificationDetails('pro', 'OpenIM后台进程',
-        channelDescription: '保证app能收到信息', importance: Importance.max, priority: Priority.high, ticker: 'ticker');
+    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'pro', 'OpenIM后台进程',
+        channelDescription: '保证app能收到信息',
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'ticker');
 
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.startForegroundService(1, packageInfo!.appName, '正在运行...', notificationDetails: androidPlatformChannelSpecifics, payload: '');
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.startForegroundService(1, packageInfo!.appName, '正在运行...',
+            notificationDetails: androidPlatformChannelSpecifics, payload: '');
   }
 
   Future<void> _stopForegroundService() async {
-    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.stopForegroundService();
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.stopForegroundService();
   }
 
   void showBadge(count) {
@@ -204,7 +234,7 @@ class AppController extends SuperController with UpgradeManger {
     queryClientConfig();
     _getDeviceInfo();
     _cancelAllNotifications();
-    autoCheckVersionUpgrade();
+    // autoCheckVersionUpgrade(); // 自动检测最新版本
     super.onReady();
   }
 
@@ -253,7 +283,10 @@ class AppController extends SuperController with UpgradeManger {
     // 获取系统静音、震动状态
     RingerModeStatus ringerStatus = await SoundMode.ringerModeStatus;
 
-    if (!_audioPlayer.playerState.playing && isAllowBeep && (ringerStatus == RingerModeStatus.normal || ringerStatus == RingerModeStatus.unknown)) {
+    if (!_audioPlayer.playerState.playing &&
+        isAllowBeep &&
+        (ringerStatus == RingerModeStatus.normal ||
+            ringerStatus == RingerModeStatus.unknown)) {
       _audioPlayer.setAsset(_ring, package: 'openim_common');
       _audioPlayer.setLoopMode(LoopMode.off);
       _audioPlayer.setVolume(1.0);
@@ -261,7 +294,9 @@ class AppController extends SuperController with UpgradeManger {
     }
 
     if (isAllowVibration &&
-        (ringerStatus == RingerModeStatus.normal || ringerStatus == RingerModeStatus.vibrate || ringerStatus == RingerModeStatus.unknown)) {
+        (ringerStatus == RingerModeStatus.normal ||
+            ringerStatus == RingerModeStatus.vibrate ||
+            ringerStatus == RingerModeStatus.unknown)) {
       if (await Vibration.hasVibrator() == true) {
         Vibration.vibrate();
       }
@@ -305,7 +340,7 @@ class AppController extends SuperController with UpgradeManger {
   @override
   void onResumed() {
     // TODO: implement onResumed
-    autoCheckVersionUpgrade();
+    // autoCheckVersionUpgrade();
   }
 
   @override
