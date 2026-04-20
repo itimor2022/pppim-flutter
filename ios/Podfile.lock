@@ -414,29 +414,29 @@ EXTERNAL SOURCES:
     :path: "./ZBar-Source"
 
 SPEC CHECKSUMS:
-  app_installer: 087516293c5a0a1ad15f8c021f9a947e23e2dacf
-  audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
+  app_installer: 33dc04135cd44cbeadf243d332a717b2bc761a6c
+  audio_session: 19e9480dbdd4e5f6c4543826b2e8b0e4ab6145fe
   Bugly: b8715e6ec4004b7f7fbffab0643ba80545aee3da
-  camera_avfoundation: be3be85408cd4126f250386828e9b1dfa40ab436
-  connectivity_plus: 481668c94744c30c53b8895afb39159d1e619bdf
-  device_info_plus: 335f3ce08d2e174b9fdc3db3db0f4e3b1f66bd89
+  camera_avfoundation: adb0207d868b2d873e895371d88448399ab78d87
+  connectivity_plus: bf0076dd84a130856aa636df1c71ccaff908fa1d
+  device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
   DKImagePickerController: b512c28220a2b8ac7419f21c491fc8534b7601ac
   DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
-  emoji_picker_flutter: ed468d9746c21711e66b2788880519a9de5de211
+  emoji_picker_flutter: fe2e6151c5b548e975d546e6eeb567daf0962a58
   ffmpeg-kit-ios-full-gpl: 8a76d9d68bd9e58cc1ffad5f42580d2a4c46731d
-  ffmpeg_kit_flutter_full_gpl: ce18b888487c05c46ed252cd2e7956812f2e3bd1
-  file_picker: 07c75322ede1d47ec9bb4ac82b27c94d3598251a
+  ffmpeg_kit_flutter_full_gpl: 8d15c14c0c3aba616fac04fe44b3d27d02e3c330
+  file_picker: 15fd9539e4eb735dc54bae8c0534a7a9511a03de
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_app_badger: 16b371e989d04cd265df85be2c3851b49cb68d18
-  flutter_bugly: 12197049262a692eab0bd2834d465a5647d920c2
-  flutter_image_compress_common: 1697a328fd72bfb335507c6bca1a65fa5ad87df1
-  flutter_inappwebview_ios: 25b61a1b550d1068e4ddaf490fc1d03c2ce6828d
-  flutter_keyboard_visibility: 4625131e43015dbbe759d9b20daaf77e0e3f6619
-  flutter_local_notifications: ad39620c743ea4c15127860f4b5641649a988100
-  flutter_native_splash: 35ddbc7228eafcb3969dcc5f1fbbe27c1145a4f0
-  flutter_openim_sdk: f10ead80373b1bfdd05fe478598b959c860d7699
-  flutter_webrtc: f5711277e7c7c49949e62c2b24afc4965cd48028
-  getuiflut: ea9b200062f474810671171f9f36985ff5d431d0
+  flutter_app_badger: b87fc231847b03b92ce1412aa351842e7e97932f
+  flutter_bugly: c9800f4d5bc5bdc27ffdde3417a26ba44266e0c3
+  flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
+  flutter_inappwebview_ios: 97215cf7d4677db55df76782dbd2930c5e1c1ea0
+  flutter_keyboard_visibility: 0339d06371254c3eb25eeb90ba8d17dca8f9c069
+  flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
+  flutter_native_splash: edf599c81f74d093a4daf8e17bd7a018854bc778
+  flutter_openim_sdk: bf67e30c7c2f3de929f09bead368977814ac634b
+  flutter_webrtc: 55df3aaa802114dad390191a46c2c8d535751268
+  getuiflut: 8628ba2b64a738a847a07d2b67e0ac305778e2ee
   GoogleDataTransport: 57c22343ab29bc686febbf7cbb13bad167c2d8fe
   GoogleMLKit: 2bd0dc6253c4d4f227aad460f69215a504b2980e
   GoogleToolboxForMac: 8bef7c7c5cf7291c687cf5354f39f9db6399ad34
@@ -445,47 +445,47 @@ SPEC CHECKSUMS:
   GTCommonSDK: 44e0656b734aa80e7576c1a687bf351633f5d324
   GTMSessionFetcher: 3a63d75eecd6aa32c2fc79f578064e1214dfdec2
   GTSDK: 1a8065ef2f2c2facf744c70b4406b2a38299ac66
-  image_cropper: 655b3ba703c9e15e3111e79151624d6154288774
-  image_gallery_saver: 14711d79da40581063e8842a11acf1969d781ed7
-  image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
-  just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
+  image_cropper: a3291c624a953049bc6a02e1f8c8ceb162a24b25
+  image_gallery_saver: cb43cc43141711190510e92c460eb1655cd343cb
+  image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
+  just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
-  livekit_client: b045daad3dfd455db9f67ad18c4b1b910bf0d7c2
-  local_auth_darwin: 553ce4f9b16d3fdfeafce9cf042e7c9f77c1c391
-  local_auth_ios: f7a1841beef3151d140a967c2e46f30637cdf451
+  livekit_client: 381ed3cad6ba0b6ffbfffcf1b5db95ad1e61ffa2
+  local_auth_darwin: 66e40372f1c29f383a314c738c7446e2f7fdadc3
+  local_auth_ios: 5046a18c018dd973247a0564496c8898dbb5adf9
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
-  map_launcher: fe43bda6720bb73c12fcc1bdd86123ff49a4d4d6
+  map_launcher: 5fde49ac9a52672bf99da746599f507b4490d7b5
   MLImage: 7bb7c4264164ade9bf64f679b40fb29c8f33ee9b
   MLKitBarcodeScanning: 04e264482c5f3810cb89ebc134ef6b61e67db505
   MLKitCommon: c1b791c3e667091918d91bda4bba69a91011e390
   MLKitVision: 8baa5f46ee3352614169b85250574fde38c36f49
-  mobile_scanner: b67191637a5ea7ba15652ca208069d2bae1900ab
+  mobile_scanner: 38dcd8a49d7d485f632b7de65e4900010187aef2
   Mute: 20135a96076f140cc82bfc8b810e2d6150d8ec7e
   nanopb: d4d75c12cd1316f4a64e3c6963f879ecd4b5e0d5
-  open_filex: 432f3cd11432da3e39f47fcc0df2b1603854eff1
+  open_filex: 6e26e659846ec990262224a12ef1c528bb4edbe4
   OrderedSet: aaeb196f7fef5a9edf55d89760da9176ad40b93c
-  package_info_plus: 566e1b7a2f3900e4b0020914ad3fc051dcc95596
-  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
-  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
-  photo_browser: d44c90ed9f5eb9d196f3b1d9ee9e5878a23119be
-  photo_manager: d2fbcc0f2d82458700ee6256a15018210a81d413
+  package_info_plus: 115f4ad11e0698c8c1c5d8a689390df880f47e85
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
+  photo_browser: e73886810414a288780fb2364b7277127e795f65
+  photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
   PromisesObjC: c50d2056b5253dadbd6c2bea79b0674bd5a52fa4
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  record: 426d0643542aaca81f738c5d214ad99626b2f134
-  scan: 28e4f67b9b0d63ccd5c649acc3d6aaf94c0a7a81
+  record: cae05d8dd3cdb1dea3511b20e5a5811a1ae00d0d
+  scan: aea35bb4aa59ccc8839c576a18cd57c7d492cc86
   SDWebImage: a81bbb3ba4ea5f810f4069c68727cb118467a04a
   SDWebImageWebPCoder: 633b813fca24f1de5e076bcd7f720c038b23892b
-  sensors_plus: 6a11ed0c2e1d0bd0b20b4029d3bad27d96e0c65b
-  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
-  sound_mode: 53bd43e2fb1f640571ea74931ca5efdea5ddfc97
-  sqflite: c35dad70033b8862124f8337cc994a809fcd9fa3
+  sensors_plus: 7229095999f30740798f0eeef5cd120357a8f4f2
+  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
+  sound_mode: ef0072f20e7306c1c371984a443156e39be092d5
+  sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   SwiftyGif: 93a1cc87bf3a51916001cf8f3d63835fb64c819f
   TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
-  url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
-  vibration: 8e2f50fc35bb736f9eecb7dd9f7047fbb6a6e888
-  video_compress: f2133a07762889d67f0711ac831faa26f956980e
-  video_player_avfoundation: 2cef49524dd1f16c5300b9cd6efd9611ce03639b
-  wakelock_plus: fd58c82b1388f4afe3fe8aa2c856503a262a5b03
+  url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
+  vibration: 7d883d141656a1c1a6d8d238616b2042a51a1241
+  video_compress: fce97e4fb1dfd88175aa07d2ffc8a2f297f87fbe
+  video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
+  wakelock_plus: 78ec7c5b202cab7761af8e2b2b3d0671be6c4ae1
   WebRTC-SDK: c24d2a6c9f571f2ed42297cb8ffba9557093142b
   ZBar: b6259c5eb9c508b8ce18f34ae76b29fa87fd3637
   ZXSDK: 145a89f90f11e18e4fe62fe43175a60ade342ba8

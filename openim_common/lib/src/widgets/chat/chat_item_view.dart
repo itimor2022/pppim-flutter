@@ -96,9 +96,12 @@ class ChatItemView extends StatefulWidget {
     this.enabledMultiMenu = true,
     this.enabledReplyMenu = true,
     this.enabledRevokeMenu = true,
+    this.enabledDoubleDeleteMenu = false,
+    this.enabledTopMessageMenu = false,
     this.showLeftNickname = true,
     this.showRightNickname = false,
     this.onTapAddEmojiMenu,
+    this.topMessageMenuText,
     this.highlightColor,
     this.allAtMap = const {},
     this.patterns = const [],
@@ -113,6 +116,8 @@ class ChatItemView extends StatefulWidget {
     this.onTapForwardMenu,
     this.onTapReplyMenu,
     this.onTapRevokeMenu,
+    this.onTapDoubleDeleteMenu,
+    this.onTapTopMessageMenu,
     this.onVisibleTrulyText,
     this.onPopMenuShowChanged,
     this.onTapQuoteMessage,
@@ -170,10 +175,13 @@ class ChatItemView extends StatefulWidget {
   final bool enabledForwardMenu;
   final bool enabledReplyMenu;
   final bool enabledRevokeMenu;
+  final bool enabledDoubleDeleteMenu;
   final bool enabledMultiMenu;
   final bool enabledAddEmojiMenu;
+  final bool enabledTopMessageMenu;
   final bool showLeftNickname;
   final bool showRightNickname;
+  final String? topMessageMenuText;
 
   ///
   final Color? highlightColor;
@@ -189,8 +197,10 @@ class ChatItemView extends StatefulWidget {
   final Function()? onTapForwardMenu;
   final Function()? onTapReplyMenu;
   final Function()? onTapRevokeMenu;
+  final Function()? onTapDoubleDeleteMenu;
   final Function()? onTapMultiMenu;
   final Function()? onTapAddEmojiMenu;
+  final Function()? onTapTopMessageMenu;
   final Function(String? text)? onVisibleTrulyText;
   final Function(bool show)? onPopMenuShowChanged;
   final Function(Message message)? onTapQuoteMessage;
@@ -537,6 +547,20 @@ class _ChatItemViewState extends State<ChatItemView> {
             text: StrRes.menuRevoke,
             enabled: widget.enabledRevokeMenu,
             onTap: widget.onTapRevokeMenu,
+          ),
+        if (widget.enabledDoubleDeleteMenu)
+          MenuInfo(
+            icon: ImageRes.menuDel,
+            text: StrRes.menuDoubleDelete,
+            enabled: widget.enabledDoubleDeleteMenu,
+            onTap: widget.onTapDoubleDeleteMenu,
+          ),
+        if (widget.enabledTopMessageMenu)
+          MenuInfo(
+            icon: ImageRes.menuReply,
+            text: widget.topMessageMenuText ?? StrRes.pinMessage,
+            enabled: widget.enabledTopMessageMenu,
+            onTap: widget.onTapTopMessageMenu,
           ),
         if (widget.enabledAddEmojiMenu)
           MenuInfo(

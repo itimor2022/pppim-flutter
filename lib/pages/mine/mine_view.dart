@@ -40,6 +40,16 @@ class MinePage extends StatelessWidget {
               label: "我的钱包",
               onTap: logic.walletBalance,
             ),
+            _buildItemView(
+              icon: ImageRes.myInfo,
+              label: "签到",
+              onTap: logic.signIn,
+            ),
+            _buildItemView(
+              icon: ImageRes.myMoney,
+              label: "提现",
+              onTap: logic.withdraw,
+            ),
             // _buildItemView(
             //   icon: ImageRes.workingCircle,
             //   label: StrRes.workingCircle,
@@ -90,8 +100,25 @@ class MinePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  (logic.imLogic.userInfo.value.nickname ?? '').toText
-                    ..style = Styles.ts_0C1C33_17sp_medium,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: (logic.imLogic.userInfo.value.nickname ?? '')
+                            .toText
+                          ..style = Styles.ts_0C1C33_17sp_medium
+                          ..maxLines = 1
+                          ..overflow = TextOverflow.ellipsis,
+                      ),
+                      if (UserExUtil.isPretty(logic.imLogic.userInfo.value.ex) ||
+                          UserExUtil.isVip(logic.imLogic.userInfo.value.ex)) ...[
+                        6.horizontalSpace,
+                        UserIdentityBadges(
+                          ex: logic.imLogic.userInfo.value.ex,
+                          compact: true,
+                        ),
+                      ],
+                    ],
+                  ),
                   4.verticalSpace,
                   GestureDetector(
                     behavior: HitTestBehavior.translucent,

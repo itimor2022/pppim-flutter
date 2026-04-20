@@ -19,6 +19,7 @@ import 'package:photo_browser/photo_browser.dart';
 import '../../RedPacket/Widgets/OpenRedPacketDialog.dart';
 import '../../RedPacket/Widgets/HandSlowDialog.dart';
 import '../../RedPacket/Api/RedPacketApi.dart';
+import '../../RedPacket/TransferPage.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sprintf/sprintf.dart';
@@ -37,6 +38,9 @@ import '../conversation/conversation_logic.dart';
 import 'group_setup/group_member_list/group_member_list_logic.dart';
 
 class ChatLogic extends GetxController {
+  // Current flutter_openim_sdk version does not expose DeleteMsgsNotification.
+  static const _deleteMessageNotificationType =
+      2102;
   final imLogic = Get.find<IMController>();
   final appLogic = Get.find<AppController>();
   final conversationLogic = Get.find<ConversationLogic>();
@@ -127,6 +131,8 @@ class ChatLogic extends GetxController {
 
   final copyTextMap = <String?, String?>{};
   final revokedTextMessage = <String, String>{};
+  final pinnedMessage = Rxn<Map<String, dynamic>>();
+  static const _groupPinnedChangedType = 'GroupPinnedMessageChanged';
 
   String? groupOwnerID;
 
@@ -144,6 +150,11 @@ class ChatLogic extends GetxController {
   bool get isSingleChat => null != userID && userID!.trim().isNotEmpty;
 
   bool get isGroupChat => null != groupID && groupID!.trim().isNotEmpty;
+
+  bool get canManagePinnedMessage =>
+      isGroupChat &&
+      (groupMemberRoleLevel.value == GroupRoleLevel.owner ||
+          groupMemberRoleLevel.value == GroupRoleLevel.admin);
 
   String get memberStr => isSingleChat ? "" : "($memberCount)";
 
@@ -211,6 +222,12 @@ class ChatLogic extends GetxController {
     imLogic.onRecvNewMessage = (Message message) {
       // 如果是当前窗口的消息
       if (isCurrentChat(message)) {
+        if (_handleDeleteMessageNotification(message)) {
+          return;
+        }
+        if (_handleGroupPinnedSyncMessage(message)) {
+          return;
+        }
         // 对方正在输入消息
         if (message.contentType == MessageType.typing) {
           if (message.typingElem?.msgTips == 'yes') {
@@ -269,6 +286,7 @@ class ChatLogic extends GetxController {
       // message?.content = jsonEncode(info);
       // message?.contentType = MessageType.advancedRevoke;
       formatQuoteMessage(info.clientMsgID!);
+      _clearPinnedMessageIfMatch(info.clientMsgID);
 
       if (null != message) {
         messageList.refresh();
@@ -828,6 +846,14 @@ class ChatLogic extends GetxController {
     LoadingView.singleton.wrap(asyncFunction: () => _deleteMessage(message));
   }
 
+  void doubleDeleteMsg(Message message) async {
+    final confirm = await Get.dialog(
+      CustomDialog(title: StrRes.confirmDoubleDeleteMessage),
+    );
+    if (confirm != true) return;
+    LoadingView.singleton.wrap(asyncFunction: () => _doubleDeleteMessage(message));
+  }
+
   /// 批量删除
   void _deleteMultiMsg() async {
     await LoadingView.singleton.wrap(asyncFunction: () async {
@@ -851,6 +877,7 @@ class ChatLogic extends GetxController {
               element.clientMsgID == message.clientMsgID &&
               (message.contentType == MessageType.video ||
                   message.contentType == MessageType.picture)));
+      _clearPinnedMessageIfMatch(message.clientMsgID);
     } catch (e) {
       await OpenIM.iMManager.messageManager
           .deleteMessageFromLocalStorage(
@@ -859,6 +886,124 @@ class ChatLogic extends GetxController {
           )
           .then((value) => privateMessageList.remove(message))
           .then((value) => messageList.remove(message));
+      _clearPinnedMessageIfMatch(message.clientMsgID);
+    }
+  }
+
+  Future<void> _doubleDeleteMessage(Message message) async {
+    final seq = message.seq ?? 0;
+    if (seq <= 0 || message.clientMsgID == null) {
+      IMViews.showToast('消息状态未同步，暂时无法双向删除');
+      return;
+    }
+    await RedPacketApi.doubleDeleteMessage(
+      conversationID: conversationInfo.conversationID,
+      clientMsgID: message.clientMsgID!,
+      seq: seq,
+    );
+    try {
+      await OpenIM.iMManager.messageManager.deleteMessageFromLocalStorage(
+        conversationID: conversationInfo.conversationID,
+        clientMsgID: message.clientMsgID!,
+      );
+    } catch (_) {}
+    privateMessageList.remove(message);
+    messageList.remove(message);
+    mediaMessages.removeWhere((element) =>
+        element.clientMsgID == message.clientMsgID &&
+        (message.contentType == MessageType.video ||
+            message.contentType == MessageType.picture));
+    _clearPinnedMessageIfMatch(message.clientMsgID);
+  }
+
+  bool _handleDeleteMessageNotification(Message message) {
+    if (message.contentType != _deleteMessageNotificationType) {
+      return false;
+    }
+    final detail = message.notificationElem?.detail;
+    if (detail == null || detail.isEmpty) {
+      return true;
+    }
+    try {
+      final map = jsonDecode(detail);
+      if (map is! Map) {
+        return true;
+      }
+      final conversationID = '${map['conversationID'] ?? ''}'.trim();
+      if (conversationID.isNotEmpty &&
+          conversationID != conversationInfo.conversationID) {
+        return true;
+      }
+      final rawSeqs = map['seqs'];
+      final seqs = <int>{};
+      if (rawSeqs is List) {
+        for (final value in rawSeqs) {
+          if (value is int) {
+            seqs.add(value);
+          } else if (value is num) {
+            seqs.add(value.toInt());
+          } else if (value is String) {
+            final seq = int.tryParse(value);
+            if (seq != null) seqs.add(seq);
+          }
+        }
+      }
+      if (seqs.isEmpty) {
+        return true;
+      }
+      _removeMessagesBySeqs(seqs);
+    } catch (_) {}
+    return true;
+  }
+
+  void _removeMessagesBySeqs(Set<int> seqs) {
+    if (seqs.isEmpty) return;
+    final removedClientMsgIDs = <String>{};
+    bool removed = false;
+    void collectRemoved(Message message) {
+      final clientMsgID = message.clientMsgID;
+      if (clientMsgID != null && clientMsgID.isNotEmpty) {
+        removedClientMsgIDs.add(clientMsgID);
+      }
+    }
+
+    messageList.removeWhere((message) {
+      final shouldRemove = message.seq != null && seqs.contains(message.seq);
+      if (shouldRemove) {
+        removed = true;
+        collectRemoved(message);
+      }
+      return shouldRemove;
+    });
+    privateMessageList.removeWhere((message) {
+      final shouldRemove = message.seq != null && seqs.contains(message.seq);
+      if (shouldRemove) {
+        removed = true;
+        collectRemoved(message);
+      }
+      return shouldRemove;
+    });
+    mediaMessages.removeWhere((message) {
+      final shouldRemove = message.seq != null && seqs.contains(message.seq);
+      if (shouldRemove) {
+        removed = true;
+        collectRemoved(message);
+      }
+      return shouldRemove;
+    });
+    scrollingCacheMessageList.removeWhere((message) {
+      final shouldRemove = message.seq != null && seqs.contains(message.seq);
+      if (shouldRemove) {
+        removed = true;
+        collectRemoved(message);
+      }
+      return shouldRemove;
+    });
+    for (final clientMsgID in removedClientMsgIDs) {
+      _clearPinnedMessageIfMatch(clientMsgID);
+    }
+    if (removed) {
+      messageList.refresh();
     }
   }
 
@@ -1027,6 +1172,26 @@ class ChatLogic extends GetxController {
         'isGroupChat': isGroupChat,
         'conversationInfo': conversationInfo
       },
+    );
+    if (result != null && result is Message) {
+      if (!messageList.contains(result)) {
+        messageList.add(result);
+        scrollBottom();
+      }
+    }
+  }
+
+  void onTapTransfer() async {
+    if (!isSingleChat || userID == null) {
+      IMViews.showToast('转账仅支持单聊');
+      return;
+    }
+    final result = await Get.to(
+      () => TransferPage(
+        recvUserID: userID!,
+        recvNickname: nickname.value,
+        recvFaceURL: faceUrl.value,
+      ),
     );
     if (result != null && result is Message) {
       if (!messageList.contains(result)) {
@@ -1603,6 +1768,9 @@ class ChatLogic extends GetxController {
     var path = DataSp.getChatBackground(otherId) ?? '';
     if (path.isNotEmpty && (await File(path).exists())) {
       background.value = path;
+    }
+    if (isGroupChat) {
+      await fetchPinnedMessage();
     }
   }
 
@@ -2196,6 +2364,13 @@ class ChatLogic extends GetxController {
     return !message.isPrivateType;
   }
 
+  bool showDoubleDeleteMenu(Message message) {
+    if (message.isPrivateType || message.isNotificationType) {
+      return false;
+    }
+    return UserExUtil.allowDoubleDeleteMessage(imLogic.userInfo.value.ex);
+  }
+
   /// 转发菜单
   bool showForwardMenu(Message message) {
     if (isRedPacket(message)) return false;
@@ -2273,6 +2448,131 @@ class ChatLogic extends GetxController {
     }
     return message.contentType == MessageType.picture ||
         message.contentType == MessageType.customFace;
+  }
+
+  bool showTopMessageMenu(Message message) {
+    if (!canManagePinnedMessage || isRedPacket(message)) {
+      return false;
+    }
+    if (message.status != MessageStatus.succeeded ||
+        message.isNotificationType ||
+        message.isPrivateType ||
+        message.isCallType ||
+        message.isRevokeType ||
+        message.contentType == MessageType.typing) {
+      return false;
+    }
+    return true;
+  }
+
+  bool isPinnedMessage(Message message) {
+    return pinnedMessage.value?['clientMsgID'] == message.clientMsgID;
+  }
+
+  String topMessageMenuText(Message message) {
+    return isPinnedMessage(message) ? StrRes.unpinMessage : StrRes.pinMessage;
+  }
+
+  Future<void> togglePinnedMessage(Message message) async {
+    if (isPinnedMessage(message)) {
+      await clearPinnedMessage();
+      return;
+    }
+    final data = <String, dynamic>{
+      'groupID': groupID,
+      'clientMsgID': message.clientMsgID,
+      'conversationID': conversationInfo.conversationID,
+      'sendID': message.sendID,
+      'senderNickname': getNewestNickname(message),
+      'contentType': message.contentType,
+      'preview': buildPinnedMessagePreview(message),
+      'sendTime': message.sendTime,
+    };
+    final resp = await RedPacketApi.setGroupPinnedMessage(
+      groupID: groupID!,
+      conversationID: conversationInfo.conversationID,
+      clientMsgID: message.clientMsgID ?? '',
+      sendID: message.sendID ?? '',
+      senderNickname: getNewestNickname(message) ?? '',
+      contentType: message.contentType ?? 0,
+      preview: data['preview'].toString(),
+      sendTime: message.sendTime ?? 0,
+    );
+    pinnedMessage.value =
+        _normalizePinnedMessageData(resp['pinned_message']) ?? data;
+    IMViews.showToast(StrRes.setSuccessfully);
+  }
+
+  Future<void> clearPinnedMessage() async {
+    if (!isGroupChat || !canManagePinnedMessage || pinnedMessage.value == null) {
+      return;
+    }
+    await RedPacketApi.clearGroupPinnedMessage(groupID: groupID!);
+    pinnedMessage.value = null;
+    IMViews.showToast(StrRes.setSuccessfully);
+  }
+
+  void _clearPinnedMessageIfMatch(String? clientMsgID) {
+    if (clientMsgID == null) return;
+    if (pinnedMessage.value?['clientMsgID'] != clientMsgID) return;
+    pinnedMessage.value = null;
+  }
+
+  Future<void> fetchPinnedMessage() async {
+    if (!isGroupChat) return;
+    try {
+      final resp = await RedPacketApi.getGroupPinnedMessage(groupID: groupID!);
+      pinnedMessage.value = _normalizePinnedMessageData(resp['pinned_message']);
+    } catch (_) {
+      pinnedMessage.value = null;
+    }
+  }
+
+  bool _handleGroupPinnedSyncMessage(Message message) {
+    if (!isGroupChat || message.contentType != MessageType.customMsgOnlineOnly) {
+      return false;
+    }
+    try {
+      final data = json.decode(message.customElem?.data ?? '');
+      if (data is! Map) return false;
+      if (data['customType'] != _groupPinnedChangedType) return false;
+      if (data['groupID'] != groupID) return false;
+      fetchPinnedMessage();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Map<String, dynamic>? _normalizePinnedMessageData(dynamic raw) {
+    if (raw is! Map) return null;
+    final data = raw.cast<String, dynamic>();
+    return {
+      'groupID': data['groupID'] ?? data['group_id'],
+      'clientMsgID': data['clientMsgID'] ?? data['client_msg_id'],
+      'conversationID': data['conversationID'] ?? data['conversation_id'],
+      'sendID': data['sendID'] ?? data['send_id'],
+      'senderNickname': data['senderNickname'] ?? data['sender_nickname'],
+      'contentType': data['contentType'] ?? data['content_type'],
+      'preview': data['preview'],
+      'sendTime': data['sendTime'] ?? data['send_time'],
+      'operatorUserID': data['operatorUserID'] ?? data['operator_user_id'],
+    };
+  }
+
+  String buildPinnedMessagePreview(Message message) {
+    final preview = IMUtils.parseMsg(message, replaceIdToNickname: true).trim();
+    if (preview.isNotEmpty) {
+      return preview;
+    }
+    if (message.isPictureType) return '[${StrRes.picture}]';
+    if (message.isVideoType) return '[${StrRes.video}]';
+    if (message.isVoiceType) return '[${StrRes.voice}]';
+    if (message.isFileType) return '[${StrRes.file}]';
+    if (message.isLocationType) return '[${StrRes.location}]';
+    if (message.isCardType) return '[${StrRes.carte}]';
+    if (message.isCustomFaceType) return '[${StrRes.emoji}]';
+    return StrRes.unsupportedMessage;
   }
 
   bool showCheckbox(Message message) {

@@ -261,7 +261,6 @@ class SelectedContactsListView extends StatelessWidget {
               Expanded(
                 child: ListView.builder(
                   itemCount: logic.checkedList.length,
-                  shrinkWrap: true,
                   itemBuilder: (_, index) => _buildItemView(index),
                 ),
               ),

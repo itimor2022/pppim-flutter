@@ -9,7 +9,7 @@ import 'routes/app_pages.dart';
 import 'widgets/app_view.dart';
 
 class ChatApp extends StatelessWidget {
-  const ChatApp({Key? key}) : super(key: key);
+  const ChatApp({super.key});
 
   @override
   Widget build(BuildContext context) {

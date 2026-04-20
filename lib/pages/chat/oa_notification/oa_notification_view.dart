@@ -28,7 +28,6 @@ class OANotificationPage extends StatelessWidget {
             child: ListView.builder(
               padding: EdgeInsets.symmetric(horizontal: 22.w),
               itemCount: logic.messageList.length,
-              shrinkWrap: true,
               itemBuilder: (_, index) {
                 final message = logic.messageList.reversed.elementAt(index);
                 return _buildItemView(index, message, logic.parse(message));

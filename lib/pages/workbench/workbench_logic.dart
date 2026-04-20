@@ -46,7 +46,8 @@ class WorkbenchLogic extends GetxController {
 
   void startUniMP(Rx<UniMPInfo> uniMPInfo) {
     final info = uniMPInfo.value;
-    if (info.url != null && (info.url!.startsWith('http://') || info.url!.startsWith('https://'))) {
+    if (info.url != null &&
+        (info.url!.startsWith('http://') || info.url!.startsWith('https://'))) {
       if (info.url!.endsWith('.wgt')) {
         _runWGT(uniMPInfo);
       } else {

@@ -35,14 +35,16 @@ class UserProfilePanelPage extends StatelessWidget {
                     children: [
                       _buildBaseInfoView(),
                       if (logic.isGroupMemberPage) _buildEnterGroupMethodView(),
-                      if (logic.iAmOwner.value && logic.groupMembersInfo != null)
+                      if (logic.iAmOwner.value &&
+                          logic.groupMembersInfo != null)
                         _buildItemView(
                           label: StrRes.setAsAdmin,
                           showSwitchButton: true,
                           switchOn: logic.hasAdminPermission.value,
                           onChanged: (_) => logic.toggleAdmin(),
                         ),
-                      if (logic.iHasMutePermissions.value && logic.groupMembersInfo != null)
+                      if (logic.iHasMutePermissions.value &&
+                          logic.groupMembersInfo != null)
                         _buildItemView(
                           label: StrRes.setMute,
                           value: IMUtils.emptyStrToNull(logic.mutedTime.value),
@@ -53,7 +55,10 @@ class UserProfilePanelPage extends StatelessWidget {
                       // DeptItemView.userProfilesPanel(
                       //   userID: logic.userInfo.value.userID,
                       // ),
-                      if (logic.isFriendship || logic.isMyself || logic.isGroupMemberPage && !logic.notAllowLookGroupMemberProfiles.value)
+                      if (logic.isFriendship ||
+                          logic.isMyself ||
+                          logic.isGroupMemberPage &&
+                              !logic.notAllowLookGroupMemberProfiles.value)
                         _buildItemView(
                           label: StrRes.personalInfo,
                           showRightArrow: true,
@@ -69,7 +74,9 @@ class UserProfilePanelPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                if ((logic.isFriendship || logic.allowSendMsgNotFriend) && !logic.isMyself) _buildButtonGroup(),
+                if ((logic.isFriendship || logic.allowSendMsgNotFriend) &&
+                    !logic.isMyself)
+                  _buildButtonGroup(),
               ],
             ),
           ),
@@ -97,11 +104,27 @@ class UserProfilePanelPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  logic.getShowName().toText
-                    ..style = Styles.ts_0C1C33_17sp_medium
-                    ..maxLines = 1
-                    ..overflow = TextOverflow.ellipsis,
-                  if (!logic.isGroupMemberPage || logic.isGroupMemberPage && !logic.notAllowAddGroupMemberFriend.value)
+                  Row(
+                    children: [
+                      Flexible(
+                        child: logic.getShowName().toText
+                          ..style = Styles.ts_0C1C33_17sp_medium
+                          ..maxLines = 1
+                          ..overflow = TextOverflow.ellipsis,
+                      ),
+                      if (UserExUtil.isPretty(logic.userInfo.value.ex) ||
+                          UserExUtil.isVip(logic.userInfo.value.ex)) ...[
+                        6.horizontalSpace,
+                        Flexible(
+                          child:
+                              UserIdentityBadges(ex: logic.userInfo.value.ex),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (!logic.isGroupMemberPage ||
+                      logic.isGroupMemberPage &&
+                          !logic.notAllowAddGroupMemberFriend.value)
                     Padding(
                       padding: EdgeInsets.only(top: 4.h),
                       child: (logic.userInfo.value.userID ?? '').toText
@@ -114,7 +137,9 @@ class UserProfilePanelPage extends StatelessWidget {
             if (!logic.isMyself &&
                 logic.isAllowAddFriend &&
                 !logic.isFriendship &&
-                (!logic.isGroupMemberPage || logic.isGroupMemberPage && !logic.notAllowAddGroupMemberFriend.value))
+                (!logic.isGroupMemberPage ||
+                    logic.isGroupMemberPage &&
+                        !logic.notAllowAddGroupMemberFriend.value))
               Material(
                 child: Ink(
                   decoration: BoxDecoration(
@@ -228,7 +253,8 @@ class UserProfilePanelPage extends StatelessWidget {
                       activeColor: Styles.c_0089FF,
                       onChanged: onChanged,
                     ),
-                  if (null != value) value.toText..style = Styles.ts_0C1C33_17sp,
+                  if (null != value)
+                    value.toText..style = Styles.ts_0C1C33_17sp,
                   if (showRightArrow)
                     ImageRes.rightArrow.toImage
                       ..width = 24.w

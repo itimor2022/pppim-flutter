@@ -5,6 +5,7 @@ import 'package:openim_common/openim_common.dart';
 import '../../../core/controller/im_controller.dart';
 import '../../../core/controller/push_controller.dart';
 import '../../../routes/app_navigator.dart';
+import '../register_mode.dart';
 
 class SetPasswordLogic extends GetxController {
   final imLogic = Get.find<IMController>();
@@ -14,7 +15,6 @@ class SetPasswordLogic extends GetxController {
   final pwdAgainCtrl = TextEditingController();
   final enabled = false.obs;
   String? phoneNumber;
-  String? email;
   String? account;
   late String areaCode;
   late int usedFor;
@@ -32,7 +32,6 @@ class SetPasswordLogic extends GetxController {
   @override
   void onInit() {
     phoneNumber = Get.arguments['phoneNumber'];
-    email = Get.arguments['email'];
     account = Get.arguments['account'];
     areaCode = Get.arguments['areaCode'];
     usedFor = Get.arguments['usedFor'];
@@ -45,7 +44,9 @@ class SetPasswordLogic extends GetxController {
   }
 
   _onChanged() {
-    enabled.value = nicknameCtrl.text.trim().isNotEmpty && pwdCtrl.text.trim().isNotEmpty && pwdAgainCtrl.text.trim().isNotEmpty;
+    enabled.value = nicknameCtrl.text.trim().isNotEmpty &&
+        pwdCtrl.text.trim().isNotEmpty &&
+        pwdAgainCtrl.text.trim().isNotEmpty;
   }
 
   bool _checkingInput() {
@@ -71,28 +72,30 @@ class SetPasswordLogic extends GetxController {
 
   void register() async {
     await LoadingView.singleton.wrap(asyncFunction: () async {
+      const fixedVerificationCode = '666666';
       final data = await Apis.register(
         nickname: nicknameCtrl.text.trim(),
         areaCode: areaCode,
-        phoneNumber: phoneNumber,
-        email: email,
-        account: account,
+        phoneNumber: kRegisterByAccount ? null : phoneNumber,
+        email: null,
+        account: kRegisterByAccount ? account : null,
         password: pwdCtrl.text,
-        verificationCode: verificationCode,
+        verificationCode: fixedVerificationCode,
         invitationCode: invitationCode,
       );
-      if (null == IMUtils.emptyStrToNull(data.imToken) || null == IMUtils.emptyStrToNull(data.chatToken)) {
+      if (null == IMUtils.emptyStrToNull(data.imToken) ||
+          null == IMUtils.emptyStrToNull(data.chatToken)) {
         AppNavigator.startLogin();
         return;
       }
-      final loginAccount = {"areaCode": areaCode, "phoneNumber": phoneNumber, 'email': email, 'account': account};
+      final loginAccount = {
+        "areaCode": areaCode,
+        "phoneNumber": kRegisterByAccount ? null : phoneNumber,
+        'account': kRegisterByAccount ? account : phoneNumber
+      };
       await DataSp.putLoginCertificate(data);
       await DataSp.putLoginAccount(loginAccount);
-      if (account != null) {
-        DataSp.putLoginType(2);
-      } else {
-        DataSp.putLoginType(email != null ? 1 : 0);
-      }
+      DataSp.putLoginType(kRegisterByAccount ? 1 : 0);
       await imLogic.login(data.userID, data.imToken);
       Logger.print('---------im login success-------');
       pushLogic.login(data.userID);

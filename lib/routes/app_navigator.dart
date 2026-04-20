@@ -171,6 +171,8 @@ class AppNavigator {
 
   static startMyInfo() => Get.toNamed(AppRoutes.myInfo);
 
+  static startSignIn() => Get.toNamed(AppRoutes.signIn);
+
   static startEditMyInfo({EditAttr attr = EditAttr.nickname, int? maxLength}) =>
       Get.toNamed(AppRoutes.editMyInfo,
           arguments: {'editAttr': attr, 'maxLength': maxLength});
@@ -377,7 +379,6 @@ class AppNavigator {
 
   static void startVerifyPhone({
     String? phoneNumber,
-    String? email,
     String? account,
     required String areaCode,
     required int usedFor,
@@ -385,7 +386,6 @@ class AppNavigator {
   }) =>
       Get.toNamed(AppRoutes.verifyPhone, arguments: {
         'phoneNumber': phoneNumber,
-        'email': email,
         'account': account,
         'areaCode': areaCode,
         'usedFor': usedFor,
@@ -395,7 +395,6 @@ class AppNavigator {
   /// [usedFor] 1：注册，2：重置密码
   static void startSetPassword({
     String? phoneNumber,
-    String? email,
     String? account,
     required String areaCode,
     required int usedFor,
@@ -404,7 +403,6 @@ class AppNavigator {
   }) =>
       Get.toNamed(AppRoutes.setPassword, arguments: {
         'phoneNumber': phoneNumber,
-        'email': email,
         'account': account,
         'areaCode': areaCode,
         'usedFor': usedFor,
@@ -438,13 +436,11 @@ class AppNavigator {
   /// [usedFor] 1：注册，2：重置密码 3：登录
   static void startResetPassword({
     String? phoneNumber,
-    String? email,
     required String areaCode,
     required String verificationCode,
   }) =>
       Get.toNamed(AppRoutes.resetPassword, arguments: {
         'phoneNumber': phoneNumber,
-        'email': email,
         'areaCode': areaCode,
         'usedFor': 2,
         'verificationCode': verificationCode,

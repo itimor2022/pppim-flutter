@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:openim/pages/login/login_logic.dart';
 import 'package:openim/routes/app_navigator.dart';
 import 'package:openim_common/openim_common.dart';
 
-import '../../core/controller/app_controller.dart';
+import 'register_mode.dart';
 
 class RegisterLogic extends GetxController {
-  final appLogic = Get.find<AppController>();
   final phoneCtrl = TextEditingController();
   final invitationCodeCtrl = TextEditingController();
   final areaCode = "+86".obs;
   final enabled = false.obs;
-  final loginController = Get.find<LoginLogic>();
-  String? get email => loginController.operateType == LoginType.email ? phoneCtrl.text.trim() : null;
-  String? get phone => loginController.operateType == LoginType.phone ? phoneCtrl.text.trim() : null;
-  String? get account => loginController.operateType == LoginType.username ? phoneCtrl.text.trim() : null;
+  String? get phone => phoneCtrl.text.trim();
+  String? get account => phoneCtrl.text.trim();
 
   @override
   void onClose() {
@@ -32,12 +28,9 @@ class RegisterLogic extends GetxController {
   }
 
   _onChanged() {
-    enabled.value =
-        needInvitationCodeRegister ? phoneCtrl.text.trim().isNotEmpty && invitationCodeCtrl.text.trim().isNotEmpty : phoneCtrl.text.trim().isNotEmpty;
+    enabled.value = phoneCtrl.text.trim().isNotEmpty &&
+        invitationCodeCtrl.text.trim().isNotEmpty;
   }
-
-  bool get needInvitationCodeRegister =>
-      null != appLogic.clientConfigMap['needInvitationCodeRegister'] && appLogic.clientConfigMap['needInvitationCodeRegister'] != '0';
 
   String? get invitationCode => IMUtils.emptyStrToNull(invitationCodeCtrl.text);
 
@@ -46,51 +39,25 @@ class RegisterLogic extends GetxController {
     if (null != code) areaCode.value = code;
   }
 
-  /// [usedFor] 1：注册，2：重置密码
-  Future<bool> requestVerificationCode() => Apis.requestVerificationCode(
-        areaCode: areaCode.value,
-        phoneNumber: phone,
-        email: email,
-        usedFor: 1,
-        invitationCode: invitationCode,
-      );
-
   void next() async {
-    if (loginController.operateType == LoginType.phone && !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
+    if (invitationCode == null) {
+      IMViews.showToast('请输入上级ID');
+      return;
+    }
+
+    if (!kRegisterByAccount &&
+        !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
       IMViews.showToast(StrRes.plsEnterRightPhone);
       return;
     }
 
-    if (loginController.operateType == LoginType.email && !phoneCtrl.text.isEmail) {
-      IMViews.showToast(StrRes.plsEnterRightEmail);
-      return;
-    }
-
-    if (loginController.operateType == LoginType.username) {
-      // 用户名注册直接进入设置密码页面，跳过验证码流程
-      AppNavigator.startSetPassword(
-        areaCode: areaCode.value,
-        phoneNumber: phone,
-        email: email,
-        account: account,
-        usedFor: 1,
-        verificationCode: "", // 用户名注册不需要验证码
-        invitationCode: invitationCode,
-      );
-      return;
-    }
-
-    final success = await LoadingView.singleton.wrap(
-      asyncFunction: () => requestVerificationCode(),
+    AppNavigator.startSetPassword(
+      areaCode: areaCode.value,
+      phoneNumber: kRegisterByAccount ? null : phone,
+      account: kRegisterByAccount ? account : null,
+      verificationCode: '666666',
+      usedFor: 1,
+      invitationCode: invitationCode,
     );
-    if (success) {
-      AppNavigator.startVerifyPhone(
-        areaCode: areaCode.value,
-        phoneNumber: phone,
-        email: email,
-        usedFor: 1,
-        invitationCode: invitationCode,
-      );
-    }
   }
 }

@@ -37,6 +37,7 @@ class GroupReadListPage extends StatelessWidget {
                       controller: logic.unreadRefreshController,
                       enablePullDown: false,
                       enablePullUp: true,
+                      onLoading: logic.loadMoreUnread,
                       footer: IMViews.buildFooter(),
                       child: ListView.builder(
                         itemCount: logic.unreadMemberList.length,
@@ -49,6 +50,7 @@ class GroupReadListPage extends StatelessWidget {
                       controller: logic.hasReadRefreshController,
                       enablePullDown: false,
                       enablePullUp: true,
+                      onLoading: logic.loadMoreHasRead,
                       footer: IMViews.buildFooter(),
                       child: ListView.builder(
                         itemCount: logic.hasReadMemberList.length,

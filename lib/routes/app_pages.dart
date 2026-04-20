@@ -140,6 +140,8 @@ import '../pages/register/verify_phone/verify_phone_binding.dart';
 import '../pages/register/verify_phone/verify_phone_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
+import '../pages/sign_in/sign_in_binding.dart';
+import '../pages/sign_in/sign_in_view.dart';
 import '../../RedPacket/RedPacketSendPage.dart';
 import '../../RedPacket/RedPacketSendController.dart';
 import '../../RedPacket/RedPacketRecordsPage.dart';
@@ -152,6 +154,7 @@ import '../../RedPacket/ResetPayPasswordPage.dart';
 import '../../RedPacket/ResetPayPasswordController.dart';
 import '../../RedPacket/RedPacketRecordListPage.dart';
 import '../../RedPacket/WalletRecordPage.dart';
+import '../../RedPacket/withdraw_page.dart';
 
 part 'app_routes.dart';
 
@@ -258,6 +261,11 @@ class AppPages {
       name: AppRoutes.myInfo,
       page: () => MyInfoPage(),
       binding: MyInfoBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.signIn,
+      page: () => SignInPage(),
+      binding: SignInBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.editMyInfo,
@@ -520,7 +528,7 @@ class AppPages {
       binding: OANotificationBinding(),
     ),
     // ...OPages.pages, // 组织架构
-    ...WPages.pages, // 工作圈
+    ...WPages.pages, // 朋友圈
     ...MPages.pages, //
 
     GetPage(
@@ -539,7 +547,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.walletBalance,
-      page: () => WalletBalancePage(),
+      page: () => const WalletBalancePage(),
       binding: BindingsBuilder(() {
         Get.lazyPut(() => WalletBalanceController());
       }),
@@ -553,7 +561,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.resetPayPassword,
-      page: () => ResetPayPasswordPage(),
+      page: () => const ResetPayPasswordPage(),
       binding: BindingsBuilder(() {
         Get.lazyPut(() => ResetPayPasswordController());
       }),
@@ -565,6 +573,10 @@ class AppPages {
     GetPage(
       name: AppRoutes.walletRecords,
       page: () => WalletRecordPage(),
+    ),
+    GetPage(
+      name: AppRoutes.withdraw,
+      page: () => const WithdrawPage(),
     ),
   ];
 }

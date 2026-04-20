@@ -118,14 +118,13 @@ class RedPacketSendController extends GetxController {
 
   void updateSweepMineRemark() {
     if (index.value == 3 && !isSingle) {
-      String count = packetQuantity.text.isEmpty ? "0" : packetQuantity.text;
       String mine = mineNum.text.isEmpty ? "0" : mineNum.text;
       String amount = priceObs.value.isEmpty ||
               priceObs.value == "0.000" ||
               priceObs.value == "0.00"
           ? "0"
           : priceObs.value;
-      productDescription.text = "【$count】-【$mine】-【$amount】";
+      productDescription.text = "$amount/$mine";
     } else {
       productDescription.text = "";
     }

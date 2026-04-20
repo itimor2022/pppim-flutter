@@ -54,7 +54,8 @@ class IMController extends GetxController with IMCallback, OpenIMLive {
     );
     // Set listener
     OpenIM.iMManager
-      ..setUploadLogsListener(OnUploadLogsListener(onUploadProgress: uploadLogsProgress))
+      ..setUploadLogsListener(
+          OnUploadLogsListener(onUploadProgress: uploadLogsProgress))
       //
       ..userManager.setUserListener(OnUserListener(
           onSelfInfoUpdated: (u) {
@@ -190,6 +191,7 @@ class IMController extends GetxController with IMCallback, OpenIMLive {
         val?.email = data.email;
         val?.birth = data.birth;
         val?.gender = data.gender;
+        val?.ex = data.ex;
       });
     }
   }

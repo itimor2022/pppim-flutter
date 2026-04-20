@@ -19,6 +19,7 @@ class DataSp {
   static const _enabledBiometric = '%s_enabledBiometric';
   static const _chatFontSizeFactor = '%s_chatFontSizeFactor';
   static const _chatBackground = '%s_chatBackground_%s';
+  static const _chatPinnedMessage = '%s_chatPinnedMessage_%s';
   static const _loginType = 'loginType';
 
   DataSp._();
@@ -51,7 +52,8 @@ class DataSp {
   }
 
   static LoginCertificate? getLoginCertificate() {
-    return SpUtil().getObj(_loginCertificate, (v) => LoginCertificate.fromJson(v.cast()));
+    return SpUtil()
+        .getObj(_loginCertificate, (v) => LoginCertificate.fromJson(v.cast()));
   }
 
   static Future<bool>? removeLoginCertificate() {
@@ -103,11 +105,13 @@ class DataSp {
     return SpUtil().getInt(_language);
   }
 
-  static Future<bool>? putHaveReadUnHandleGroupApplication(List<String> idList) {
+  static Future<bool>? putHaveReadUnHandleGroupApplication(
+      List<String> idList) {
     return SpUtil().putStringList(getKey(_groupApplication), idList);
   }
 
-  static Future<bool>? putHaveReadUnHandleFriendApplication(List<String> idList) {
+  static Future<bool>? putHaveReadUnHandleFriendApplication(
+      List<String> idList) {
     return SpUtil().putStringList(getKey(_friendApplication), idList);
   }
 
@@ -164,6 +168,24 @@ class DataSp {
 
   static Future<bool>? clearChatBackground(String toUid) {
     return SpUtil().remove(getKey(_chatBackground, key2: toUid));
+  }
+
+  static Future<bool>? putChatPinnedMessage(
+    String conversationID,
+    Map<String, dynamic> value,
+  ) {
+    return SpUtil().putObject(
+      getKey(_chatPinnedMessage, key2: conversationID),
+      value,
+    );
+  }
+
+  static Map? getChatPinnedMessage(String conversationID) {
+    return SpUtil().getObject(getKey(_chatPinnedMessage, key2: conversationID));
+  }
+
+  static Future<bool>? clearChatPinnedMessage(String conversationID) {
+    return SpUtil().remove(getKey(_chatPinnedMessage, key2: conversationID));
   }
 
   static Future<bool>? putLoginType(int type) {

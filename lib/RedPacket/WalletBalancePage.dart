@@ -6,6 +6,8 @@ import 'WalletBalanceController.dart';
 import '../routes/app_pages.dart';
 
 class WalletBalancePage extends GetView<WalletBalanceController> {
+  const WalletBalancePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +40,8 @@ class WalletBalancePage extends GetView<WalletBalanceController> {
             SizedBox(height: 10.w),
             _buildMenuItem(
                 "支付密码设置", () => Get.toNamed(AppRoutes.setPayPassword)),
+            Container(height: 1, color: Colors.grey[200]),
+            _buildMenuItem("提现", () => Get.toNamed(AppRoutes.withdraw)),
             Container(height: 1, color: Colors.grey[200]),
             _buildMenuItem(
                 "红包记录", () => Get.toNamed(AppRoutes.redPacketRecordList)),

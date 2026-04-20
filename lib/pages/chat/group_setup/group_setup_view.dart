@@ -155,7 +155,7 @@ class GroupSetupPage extends StatelessWidget {
                         ConstrainedBox(
                             constraints: BoxConstraints(maxWidth: 200.w),
                             child: (logic.groupInfo.value.groupName ?? '').toText..style = Styles.ts_0C1C33_17sp),
-                        '(${logic.groupInfo.value.memberCount ?? 0})'.toText..style = Styles.ts_0C1C33_17sp,
+                        '(${logic.visibleMemberCount})'.toText..style = Styles.ts_0C1C33_17sp,
                         6.horizontalSpace,
                         if (logic.isOwnerOrAdmin)
                           ImageRes.editName.toImage
@@ -281,7 +281,7 @@ class GroupSetupPage extends StatelessWidget {
                 height: 46.h,
                 child: Row(
                   children: [
-                    sprintf(StrRes.viewAllGroupMembers, [logic.groupInfo.value.memberCount]).toText..style = Styles.ts_0C1C33_17sp,
+                    sprintf(StrRes.viewAllGroupMembers, [logic.visibleMemberCount]).toText..style = Styles.ts_0C1C33_17sp,
                     const Spacer(),
                     ImageRes.rightArrow.toImage
                       ..width = 24.w

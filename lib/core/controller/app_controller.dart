@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app_badger/flutter_app_badger.dart';
+import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart' as im;
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
@@ -20,16 +22,17 @@ import 'push_controller.dart';
 class AppController extends SuperController with UpgradeManger {
   var isRunningBackground = false;
   var isAppBadgeSupported = false;
+  var _backgroundExecutionReady = false;
+  var _foregroundServiceStarted = false;
+  var _iosKeepAlivePlaying = false;
 
   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  final initializationSettingsAndroid =
-      const AndroidInitializationSettings('@mipmap/ic_launcher');
+  final initializationSettingsAndroid = const AndroidInitializationSettings('@mipmap/ic_launcher');
 
   /// Note: permissions aren't requested here just to demonstrate that can be
   /// done later
-  final DarwinInitializationSettings initializationSettingsDarwin =
-      DarwinInitializationSettings(
+  final DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
     requestAlertPermission: false,
     requestBadgePermission: false,
     requestSoundPermission: false,
@@ -45,8 +48,7 @@ class AppController extends SuperController with UpgradeManger {
 
   RTCBridge? rtcBridge = PackageBridge.rtcBridge;
 
-  bool get shouldMuted =>
-      meetingBridge?.hasConnection == true || rtcBridge?.hasConnection == true;
+  bool get shouldMuted => meetingBridge?.hasConnection == true || rtcBridge?.hasConnection == true;
 
   final _ring = 'assets/audio/message_ring.wav';
   final _audioPlayer = AudioPlayer(
@@ -55,6 +57,7 @@ class AppController extends SuperController with UpgradeManger {
       // androidApplyAudioAttributes: false,
       // handleAudioSessionActivation: false,
       );
+  final _keepAlivePlayer = AudioPlayer();
 
   late BaseDeviceInfo deviceInfo;
 
@@ -66,6 +69,7 @@ class AppController extends SuperController with UpgradeManger {
   /// needInvitationCodeRegister
   /// robots
   final clientConfigMap = <String, dynamic>{}.obs;
+  bool get showGroupAllMembers => false;
 
   Future<void> runningBackground(bool run) async {
     Logger.print('-----App running background : $run-------------');
@@ -73,6 +77,7 @@ class AppController extends SuperController with UpgradeManger {
     if (isRunningBackground && !run) {}
     isRunningBackground = run;
     Get.find<IMController>().backgroundSubject.sink.add(run);
+    await _syncKeepAliveState();
     if (!run) {
       _cancelAllNotifications();
     }
@@ -90,41 +95,33 @@ class AppController extends SuperController with UpgradeManger {
       initializationSettings,
       onDidReceiveNotificationResponse: (notificationResponse) {},
     );
-    // _startForegroundService();
+    await _initBackgroundExecution();
+    await _configureKeepAliveAudioSession();
+    await _initKeepAlivePlayer();
+    await _syncKeepAliveState(force: true);
     isAppBadgeSupported = await FlutterAppBadger.isAppBadgeSupported();
     super.onInit();
   }
 
   void _requestPermissions() {
-    flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-    flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
+    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
           alert: true,
           badge: true,
           sound: true,
         );
   }
 
-  Future<void> showNotification(im.Message message,
-      {bool showNotification = true}) async {
+  Future<void> showNotification(im.Message message, {bool showNotification = true}) async {
     if (_isGlobalNotDisturb() ||
             message.attachedInfoElem?.notSenderNotificationPush == true ||
             message.contentType == im.MessageType.typing ||
-            message.sendID ==
-                OpenIM.iMManager
-                    .userID /* ||
+            message.sendID == OpenIM.iMManager.userID /* ||
         message.contentType! >= 1000*/
         ) return;
 
     // 开启免打扰的不提示
-    var sourceID = message.sessionType == ConversationType.single
-        ? message.sendID
-        : message.groupID;
+    var sourceID = message.sessionType == ConversationType.single ? message.sendID : message.groupID;
     if (sourceID != null && message.sessionType != null) {
       var i = await OpenIM.iMManager.conversationManager.getOneConversation(
         sourceID: sourceID,
@@ -145,17 +142,10 @@ class AppController extends SuperController with UpgradeManger {
       if (Platform.isAndroid) {
         final id = seq;
 
-        const androidPlatformChannelSpecifics = AndroidNotificationDetails(
-            'chat', 'OpenIM聊天消息',
-            channelDescription: '来自OpenIM的信息',
-            importance: Importance.max,
-            priority: Priority.high,
-            ticker: 'ticker');
-        const NotificationDetails platformChannelSpecifics =
-            NotificationDetails(android: androidPlatformChannelSpecifics);
-        await flutterLocalNotificationsPlugin.show(
-            id, '您收到了一条新消息', '消息内容：.....', platformChannelSpecifics,
-            payload: '');
+        const androidPlatformChannelSpecifics = AndroidNotificationDetails('chat', 'OpenIM聊天消息',
+            channelDescription: '来自OpenIM的信息', importance: Importance.max, priority: Priority.high, ticker: 'ticker');
+        const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+        await flutterLocalNotificationsPlugin.show(id, '您收到了一条新消息', '消息内容：.....', platformChannelSpecifics, payload: '');
       }
     }
   }
@@ -164,27 +154,104 @@ class AppController extends SuperController with UpgradeManger {
     await flutterLocalNotificationsPlugin.cancelAll();
   }
 
+  Future<void> _initBackgroundExecution() async {
+    if (!Platform.isAndroid) return;
+    try {
+      const androidConfig = FlutterBackgroundAndroidConfig(
+        notificationTitle: 'OpenIM 后台运行中',
+        notificationText: '保持连接活跃，确保消息及时送达',
+        notificationImportance: AndroidNotificationImportance.High,
+        notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
+        enableWifiLock: true,
+        shouldRequestBatteryOptimizationsOff: true,
+      );
+      _backgroundExecutionReady =
+          await FlutterBackground.initialize(androidConfig: androidConfig);
+      Logger.print('android background execution ready: $_backgroundExecutionReady');
+    } catch (e) {
+      _backgroundExecutionReady = false;
+      Logger.print('init android background execution error: $e');
+    }
+  }
+
   Future<void> _startForegroundService() async {
+    if (!Platform.isAndroid || _foregroundServiceStarted) return;
     await getAppInfo();
-    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
-        'pro', 'OpenIM后台进程',
-        channelDescription: '保证app能收到信息',
-        importance: Importance.max,
-        priority: Priority.high,
-        ticker: 'ticker');
+    const androidPlatformChannelSpecifics = AndroidNotificationDetails('pro', 'OpenIM后台进程',
+        channelDescription: '保证app能收到信息', importance: Importance.max, priority: Priority.high, ticker: 'ticker');
 
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.startForegroundService(1, packageInfo!.appName, '正在运行...',
-            notificationDetails: androidPlatformChannelSpecifics, payload: '');
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.startForegroundService(1, packageInfo!.appName, '正在运行...', notificationDetails: androidPlatformChannelSpecifics, payload: '');
+    _foregroundServiceStarted = true;
   }
 
   Future<void> _stopForegroundService() async {
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.stopForegroundService();
+    if (!Platform.isAndroid || !_foregroundServiceStarted) return;
+    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.stopForegroundService();
+    _foregroundServiceStarted = false;
+  }
+
+  Future<void> _initKeepAlivePlayer() async {
+    await _keepAlivePlayer.setAsset(_ring, package: 'openim_common');
+    await _keepAlivePlayer.setLoopMode(LoopMode.one);
+    await _keepAlivePlayer.setVolume(0.01);
+  }
+
+  Future<void> _configureKeepAliveAudioSession() async {
+    if (!Platform.isIOS) return;
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      await session.setActive(true);
+    } catch (e) {
+      Logger.print('configure ios keep alive audio session error: $e');
+    }
+  }
+
+  Future<void> _syncKeepAliveState({bool force = false}) async {
+    if (Platform.isAndroid) {
+      if (_backgroundExecutionReady && (isRunningBackground || force)) {
+        try {
+          await FlutterBackground.enableBackgroundExecution();
+        } catch (e) {
+          Logger.print('enable android background execution error: $e');
+        }
+      } else if (_backgroundExecutionReady &&
+          FlutterBackground.isBackgroundExecutionEnabled) {
+        try {
+          await FlutterBackground.disableBackgroundExecution();
+        } catch (e) {
+          Logger.print('disable android background execution error: $e');
+        }
+      }
+      if (isRunningBackground || force) {
+        await _startForegroundService();
+      } else {
+        await _stopForegroundService();
+      }
+      return;
+    }
+    if (!Platform.isIOS) return;
+
+    if (isRunningBackground) {
+      if (!_iosKeepAlivePlaying || force) {
+        try {
+          await _keepAlivePlayer.seek(Duration.zero);
+          await _keepAlivePlayer.play();
+          _iosKeepAlivePlaying = true;
+        } catch (e) {
+          Logger.print('start ios keep alive audio error: $e');
+        }
+      }
+    } else if (_iosKeepAlivePlaying || force) {
+      try {
+        await _keepAlivePlayer.stop();
+      } catch (e) {
+        Logger.print('stop ios keep alive audio error: $e');
+      }
+      _iosKeepAlivePlaying = false;
+    }
   }
 
   void showBadge(count) {
@@ -208,9 +275,10 @@ class AppController extends SuperController with UpgradeManger {
   @override
   void onClose() {
     // backgroundSubject.close();
-    // _stopForegroundService();
+    _stopForegroundService();
     closeSubject();
     _audioPlayer.dispose();
+    _keepAlivePlayer.dispose();
     super.onClose();
   }
 
@@ -230,11 +298,11 @@ class AppController extends SuperController with UpgradeManger {
 
   @override
   void onReady() {
-    // _startForegroundService();
+    _syncKeepAliveState(force: true);
     queryClientConfig();
     _getDeviceInfo();
     _cancelAllNotifications();
-    // autoCheckVersionUpgrade(); // 自动检测最新版本
+    autoCheckVersionUpgrade();
     super.onReady();
   }
 
@@ -283,10 +351,7 @@ class AppController extends SuperController with UpgradeManger {
     // 获取系统静音、震动状态
     RingerModeStatus ringerStatus = await SoundMode.ringerModeStatus;
 
-    if (!_audioPlayer.playerState.playing &&
-        isAllowBeep &&
-        (ringerStatus == RingerModeStatus.normal ||
-            ringerStatus == RingerModeStatus.unknown)) {
+    if (!_audioPlayer.playerState.playing && isAllowBeep && (ringerStatus == RingerModeStatus.normal || ringerStatus == RingerModeStatus.unknown)) {
       _audioPlayer.setAsset(_ring, package: 'openim_common');
       _audioPlayer.setLoopMode(LoopMode.off);
       _audioPlayer.setVolume(1.0);
@@ -294,9 +359,7 @@ class AppController extends SuperController with UpgradeManger {
     }
 
     if (isAllowVibration &&
-        (ringerStatus == RingerModeStatus.normal ||
-            ringerStatus == RingerModeStatus.vibrate ||
-            ringerStatus == RingerModeStatus.unknown)) {
+        (ringerStatus == RingerModeStatus.normal || ringerStatus == RingerModeStatus.vibrate || ringerStatus == RingerModeStatus.unknown)) {
       if (await Vibration.hasVibrator() == true) {
         Vibration.vibrate();
       }
@@ -334,13 +397,13 @@ class AppController extends SuperController with UpgradeManger {
 
   @override
   void onPaused() {
-    // TODO: implement onPaused
+    runningBackground(true);
   }
 
   @override
   void onResumed() {
-    // TODO: implement onResumed
-    // autoCheckVersionUpgrade();
+    runningBackground(false);
+    autoCheckVersionUpgrade();
   }
 
   @override

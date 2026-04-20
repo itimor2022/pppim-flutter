@@ -19,7 +19,7 @@ class GroupReadListLogic extends GetxController {
   final hasReadRefreshController = RefreshController();
   final unreadRefreshController = RefreshController();
   final index = 0.obs;
-  final count = 100000;
+  final _pageSize = 50;
 
   @override
   void onInit() {
@@ -47,18 +47,51 @@ class GroupReadListLogic extends GetxController {
   }
 
   void queryHasReadMembersList() async {
-    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(conversationID, clientMsgID, count: count);
+    hasReadMemberList.clear();
+    final list = await OpenIM.iMManager.messageManager
+        .getGroupMessageReaderList(conversationID, clientMsgID, count: _pageSize);
     hasReadMemberList.assignAll(list);
+    if (list.length < _pageSize) {
+      hasReadRefreshController.loadNoData();
+    } else {
+      hasReadRefreshController.loadComplete();
+    }
+  }
+
+  void loadMoreHasRead() async {
+    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(
+        conversationID, clientMsgID,
+        count: _pageSize, offset: hasReadMemberList.length);
+    hasReadMemberList.addAll(list);
+    if (list.length < _pageSize) {
+      hasReadRefreshController.loadNoData();
+    } else {
+      hasReadRefreshController.loadComplete();
+    }
   }
 
   void queryUnreadMemberList() async {
-    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(conversationID, clientMsgID, filter: 1, count: count);
-
+    unreadMemberList.clear();
+    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(
+        conversationID, clientMsgID,
+        filter: 1, count: _pageSize);
     unreadMemberList.assignAll(list);
-    if (list.length == count) {
-      unreadRefreshController.loadComplete();
-    } else {
+    if (list.length < _pageSize) {
       unreadRefreshController.loadNoData();
+    } else {
+      unreadRefreshController.loadComplete();
+    }
+  }
+
+  void loadMoreUnread() async {
+    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(
+        conversationID, clientMsgID,
+        filter: 1, count: _pageSize, offset: unreadMemberList.length);
+    unreadMemberList.addAll(list);
+    if (list.length < _pageSize) {
+      unreadRefreshController.loadNoData();
+    } else {
+      unreadRefreshController.loadComplete();
     }
   }
 

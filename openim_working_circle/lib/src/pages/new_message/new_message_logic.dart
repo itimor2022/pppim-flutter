@@ -24,7 +24,7 @@ class NewMessageLogic extends GetxController {
         showNumber: pageSize,
       );
 
-  /// 工作圈消息类型    0为普通评论 1为被喜欢 2为AT提醒看的朋友圈
+  /// 朋友圈消息类型    0为普通评论 1为被喜欢 2为AT提醒看的朋友圈
   /// notificationMsgType
   refreshNewMessage() async {
     var list = await _request(pageNo = 1);

@@ -77,10 +77,12 @@ abstract class AppRoutes {
   static const redPacketSend = '/red_packet_send';
   static const redPacketRecords = '/red_packet_records';
   static const walletBalance = '/wallet_balance';
+  static const signIn = '/sign_in';
   static const setPayPassword = '/set_pay_password';
   static const resetPayPassword = '/reset_pay_password';
   static const redPacketRecordList = '/red_packet_record_list';
   static const walletRecords = '/wallet_records';
+  static const withdraw = '/withdraw';
 }
 
 extension RoutesExtension on String {

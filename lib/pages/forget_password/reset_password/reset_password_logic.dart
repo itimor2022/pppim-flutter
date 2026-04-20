@@ -8,7 +8,6 @@ class ResetPasswordLogic extends GetxController {
   final pwdAgainCtrl = TextEditingController();
   final enabled = false.obs;
   String? phoneNumber;
-  String? email;
   late String areaCode;
   late int usedFor;
   late String verificationCode;
@@ -24,7 +23,6 @@ class ResetPasswordLogic extends GetxController {
   @override
   void onInit() {
     phoneNumber = Get.arguments['phoneNumber'];
-    email = Get.arguments['email'];
     areaCode = Get.arguments['areaCode'];
     verificationCode = Get.arguments['verificationCode'];
     pwdCtrl.addListener(_onChanged);
@@ -33,7 +31,8 @@ class ResetPasswordLogic extends GetxController {
   }
 
   _onChanged() {
-    enabled.value = pwdCtrl.text.trim().isNotEmpty && pwdAgainCtrl.text.trim().isNotEmpty;
+    enabled.value =
+        pwdCtrl.text.trim().isNotEmpty && pwdAgainCtrl.text.trim().isNotEmpty;
   }
 
   bool _checkingInput() {
@@ -51,7 +50,7 @@ class ResetPasswordLogic extends GetxController {
       asyncFunction: () => Apis.resetPassword(
             areaCode: areaCode,
             phoneNumber: phoneNumber,
-            email: email,
+            email: null,
             password: pwdCtrl.text,
             verificationCode: verificationCode,
           ));

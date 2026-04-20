@@ -87,6 +87,42 @@ class RedPacketApi {
     );
   }
 
+  static Future<Map<String, dynamic>> transfer({
+    required String userID,
+    required String recvUserID,
+    required String amount,
+    required String password,
+    String? remark,
+  }) async {
+    return await HttpUtil.post(
+      Urls.transfer,
+      data: {
+        "user_id": userID,
+        "recv_user_id": recvUserID,
+        "amount": amount,
+        "password": password,
+        "remark": remark,
+      },
+      options: chatTokenOptions,
+    );
+  }
+
+  static Future<Map<String, dynamic>> applyWithdraw({
+    required String amount,
+    required String password,
+    String? remark,
+  }) async {
+    return await HttpUtil.post(
+      Urls.applyWithdraw,
+      data: {
+        "amount": amount,
+        "password": password,
+        "remark": remark,
+      },
+      options: chatTokenOptions,
+    );
+  }
+
   /// 5. 设置支付密码
   static Future<dynamic> setPayPassword({
     required String userID,
@@ -191,6 +227,103 @@ class RedPacketApi {
         "limit": limit,
         "year": year,
         "type": type,
+      },
+      options: chatTokenOptions,
+    );
+  }
+
+  static Future<Map<String, dynamic>> getSignInStatus() async {
+    return await HttpUtil.post(
+      Urls.getSignInStatus,
+      data: {},
+      options: chatTokenOptions,
+    );
+  }
+
+  static Future<Map<String, dynamic>> signIn() async {
+    return await HttpUtil.post(
+      Urls.signIn,
+      data: {},
+      options: chatTokenOptions,
+    );
+  }
+
+  static Future<Map<String, dynamic>> getSignInCalendar({
+    int? year,
+    int? month,
+  }) async {
+    return await HttpUtil.post(
+      Urls.getSignInCalendar,
+      data: {
+        "year": year,
+        "month": month,
+      },
+      options: chatTokenOptions,
+    );
+  }
+
+  static Future<Map<String, dynamic>> getGroupPinnedMessage({
+    required String groupID,
+  }) async {
+    return await HttpUtil.post(
+      Urls.getGroupPinnedMessage,
+      data: {
+        "group_id": groupID,
+      },
+      options: chatTokenOptions,
+      showErrorToast: false,
+    );
+  }
+
+  static Future<Map<String, dynamic>> setGroupPinnedMessage({
+    required String groupID,
+    required String conversationID,
+    required String clientMsgID,
+    required String sendID,
+    required String senderNickname,
+    required int contentType,
+    required String preview,
+    required int sendTime,
+  }) async {
+    return await HttpUtil.post(
+      Urls.setGroupPinnedMessage,
+      data: {
+        "group_id": groupID,
+        "conversation_id": conversationID,
+        "client_msg_id": clientMsgID,
+        "send_id": sendID,
+        "sender_nickname": senderNickname,
+        "content_type": contentType,
+        "preview": preview,
+        "send_time": sendTime,
+      },
+      options: chatTokenOptions,
+    );
+  }
+
+  static Future<Map<String, dynamic>> clearGroupPinnedMessage({
+    required String groupID,
+  }) async {
+    return await HttpUtil.post(
+      Urls.clearGroupPinnedMessage,
+      data: {
+        "group_id": groupID,
+      },
+      options: chatTokenOptions,
+    );
+  }
+
+  static Future<Map<String, dynamic>> doubleDeleteMessage({
+    required String conversationID,
+    required String clientMsgID,
+    required int seq,
+  }) async {
+    return await HttpUtil.post(
+      Urls.doubleDeleteMessage,
+      data: {
+        "conversation_id": conversationID,
+        "client_msg_id": clientMsgID,
+        "seq": seq,
       },
       options: chatTokenOptions,
     );

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:openim_common/openim_common.dart';
+import 'mine_reward_config_page.dart';
 
 class MineConfigLogic extends GetxController {
   final String groupID;
@@ -23,9 +24,9 @@ class MineConfigLogic extends GetxController {
       if (res != null && res is List) {
         configs.assignAll(List<Map<String, dynamic>>.from(res));
       }
-      // 初始化 4-12 档位（如果后端无数据）
+      // 初始化 5-9 档位（如果后端无数据）
       if (configs.isEmpty) {
-        for (int i = 4; i <= 12; i++) {
+        for (int i = 5; i <= 9; i++) {
           configs.add({
             'packet_count': i,
             'min_amount': 10 * 100, // 10元
@@ -67,14 +68,34 @@ class MineConfigLogic extends GetxController {
   }
 }
 
-class MineConfigPage extends StatelessWidget {
+class MineConfigPage extends StatefulWidget {
   final String groupID;
 
   const MineConfigPage({Key? key, required this.groupID}) : super(key: key);
 
   @override
+  State<MineConfigPage> createState() => _MineConfigPageState();
+}
+
+class _MineConfigPageState extends State<MineConfigPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late MineConfigLogic logic;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 5, vsync: this);
+    logic = Get.put(MineConfigLogic(groupID: widget.groupID));
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final logic = Get.put(MineConfigLogic(groupID: groupID));
     return Scaffold(
       appBar: TitleBar.back(
         title: '本群扫雷配置',
@@ -83,7 +104,7 @@ class MineConfigPage extends StatelessWidget {
           child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('保存',
+            child: const Text('保存',
                 style: TextStyle(color: Color(0xFF0089FF), fontSize: 16)),
           ),
         ),
@@ -93,18 +114,52 @@ class MineConfigPage extends StatelessWidget {
         if (logic.isLoading.value && logic.configs.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        return ListView.builder(
-          itemCount: logic.configs.length,
-          itemBuilder: (_, index) {
-            return MineConfigItemWidget(
-              key: ValueKey(logic.configs[index]['packet_count']),
-              index: index,
-              item: logic.configs[index],
-              logic: logic,
-            );
-          },
+        return Column(
+          children: [
+            Container(
+              color: Colors.white,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: const Color(0xFF0089FF),
+                unselectedLabelColor: const Color(0xFF666666),
+                indicatorColor: const Color(0xFF0089FF),
+                tabs: const [
+                  Tab(text: '5包'),
+                  Tab(text: '6包'),
+                  Tab(text: '7包'),
+                  Tab(text: '8包'),
+                  Tab(text: '9包'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  for (int i = 5; i <= 9; i++)
+                    _buildConfigView(i),
+                ],
+              ),
+            ),
+          ],
         );
       }),
+    );
+  }
+
+  Widget _buildConfigView(int packetCount) {
+    final index = logic.configs.indexWhere((c) => c['packet_count'] == packetCount);
+    if (index == -1) {
+      return const Center(child: Text('暂无配置'));
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: MineConfigItemWidget(
+        key: ValueKey(packetCount),
+        index: index,
+        item: logic.configs[index],
+        logic: logic,
+      ),
     );
   }
 }
@@ -156,9 +211,8 @@ class _MineConfigItemWidgetState extends State<MineConfigItemWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final count = widget.item['packet_count'] ?? 4;
+    final count = widget.item['packet_count'] ?? 5;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(8)),
@@ -168,8 +222,8 @@ class _MineConfigItemWidgetState extends State<MineConfigItemWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('包数档位: $count 包',
-                  style: TextStyle(
+              Text('$count 包配置',
+                  style: const TextStyle(
                       color: Color(0xFF333333),
                       fontSize: 16,
                       fontWeight: FontWeight.w500)),
@@ -267,6 +321,19 @@ class _MineConfigItemWidgetState extends State<MineConfigItemWidget> {
                     widget.index, 'multi_count_limit', int.tryParse(v) ?? 3),
               )),
             ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(),
+          TextButton.icon(
+            onPressed: () => Get.to(() => MineRewardConfigPage(
+              groupID: widget.logic.groupID,
+              packetCount: count,
+            )),
+            icon: const Icon(Icons.card_giftcard, size: 18),
+            label: const Text('配置多雷奖励'),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF0089FF),
+            ),
           ),
         ],
       ),

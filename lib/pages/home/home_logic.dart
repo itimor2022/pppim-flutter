@@ -1,19 +1,19 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:flutter_screen_lock/flutter_screen_lock.dart';
 import 'package:get/get.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:openim_common/openim_common.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../core/controller/app_controller.dart';
 import '../../core/controller/im_controller.dart';
 import '../../core/controller/push_controller.dart';
 import '../../core/im_callback.dart';
+import '../../RedPacket/Api/RedPacketApi.dart';
+import '../sign_in/widgets/sign_in_dialog.dart';
 import '../../routes/app_navigator.dart';
+import '../../routes/app_pages.dart';
 import '../../widgets/screen_lock_title.dart';
 
 class HomeLogic extends SuperController {
@@ -31,6 +31,9 @@ class HomeLogic extends SuperController {
   late bool _isAutoLogin;
   final auth = LocalAuthentication();
   final _errorController = PublishSubject<String>();
+  bool _signInDialogChecked = false;
+  final _signInDialogLoading = false.obs;
+  bool _checkingSignInDialog = false;
 
   Function()? onScrollToUnreadMessage;
 
@@ -54,7 +57,8 @@ class HomeLogic extends SuperController {
   /// 浏览过得不再计入红点
   void getUnhandledFriendApplicationCount() async {
     var i = 0;
-    var list = await OpenIM.iMManager.friendshipManager.getFriendApplicationListAsRecipient();
+    var list = await OpenIM.iMManager.friendshipManager
+        .getFriendApplicationListAsRecipient();
     var haveReadList = DataSp.getHaveReadUnHandleFriendApplication();
     haveReadList ??= <String>[];
     for (var info in list) {
@@ -70,7 +74,8 @@ class HomeLogic extends SuperController {
   /// 获取群申请未处理数
   void getUnhandledGroupApplicationCount() async {
     var i = 0;
-    var list = await OpenIM.iMManager.groupManager.getGroupApplicationListAsRecipient();
+    var list = await OpenIM.iMManager.groupManager
+        .getGroupApplicationListAsRecipient();
     var haveReadList = DataSp.getHaveReadUnHandleGroupApplication();
     haveReadList ??= <String>[];
     for (var info in list) {
@@ -108,6 +113,9 @@ class HomeLogic extends SuperController {
     getUnhandledGroupApplicationCount();
     cacheLogic.initCallRecords();
     cacheLogic.initFavoriteEmoji();
+    if (!_isShowScreenLock) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkDailySignIn());
+    }
     super.onReady();
   }
 
@@ -148,6 +156,7 @@ class HomeLogic extends SuperController {
         onUnlocked: () {
           _isShowScreenLock = false;
           Get.back();
+          _checkDailySignIn();
         },
         onMaxRetries: (_) async {
           Get.back();
@@ -187,7 +196,8 @@ class HomeLogic extends SuperController {
   @override
   void onResumed() {
     // TODO: implement onResumed
-    if (imLogic.imSdkStatusSubject.valueOrNull == IMSdkStatus.connectionSucceeded) {
+    if (imLogic.imSdkStatusSubject.valueOrNull ==
+        IMSdkStatus.connectionSucceeded) {
       _getRTCInvitationStart();
     } else {
       imLogic.imSdkStatusSubject.listen((value) {
@@ -199,7 +209,8 @@ class HomeLogic extends SuperController {
   }
 
   void _getRTCInvitationStart() async {
-    final signalingInfo = await OpenIM.iMManager.signalingManager.getSignalingInvitationInfoStartApp();
+    final signalingInfo = await OpenIM.iMManager.signalingManager
+        .getSignalingInvitationInfoStartApp();
     if (null != signalingInfo.invitation) {
       // 调用视频界面
       imLogic.receiveNewInvitation(signalingInfo);
@@ -209,5 +220,56 @@ class HomeLogic extends SuperController {
   @override
   void onHidden() {
     // TODO: implement onHidden
+  }
+
+  Future<void> _checkDailySignIn() async {
+    if (_signInDialogChecked || _checkingSignInDialog) return;
+    if (Get.currentRoute != AppRoutes.home) {
+      Future.delayed(const Duration(milliseconds: 300), _checkDailySignIn);
+      return;
+    }
+    if (Get.isDialogOpen == true) {
+      Future.delayed(const Duration(milliseconds: 500), _checkDailySignIn);
+      return;
+    }
+    _checkingSignInDialog = true;
+    final data = await RedPacketApi.getSignInStatus();
+    if (data['signed'] == true) {
+      _signInDialogChecked = true;
+      return;
+    }
+    if (Get.isDialogOpen == true) {
+      Future.delayed(const Duration(milliseconds: 500), _checkDailySignIn);
+      return;
+    }
+    final rewardText = _formatFen(int.tryParse('${data['rewardAmount']}') ?? 0);
+    await Get.dialog(
+      Obx(
+        () => SignInDialog(
+          rewardText: rewardText,
+          signing: _signInDialogLoading.value,
+          onSignIn: () async {
+            if (_signInDialogLoading.value) return;
+            _signInDialogLoading.value = true;
+            try {
+              await RedPacketApi.signIn();
+              IMViews.showToast('签到成功');
+              Get.back();
+            } finally {
+              _signInDialogLoading.value = false;
+            }
+          },
+        ),
+      ),
+      barrierDismissible: true,
+      routeSettings: const RouteSettings(name: 'sign_in_dialog'),
+    );
+    _signInDialogChecked = true;
+  }
+
+  String _formatFen(int fen) {
+    final yuan = fen ~/ 100;
+    final cent = (fen % 100).abs().toString().padLeft(2, '0');
+    return '$yuan.$cent';
   }
 }

@@ -24,6 +24,9 @@ class ConversationLogic extends GetxController {
   final refreshController = RefreshController();
   final tempDraftText = <String, String>{};
   final pageSize = 40;
+  final _singleChatVipMap = <String, bool>{};
+  final _singleChatPrettyMap = <String, bool>{};
+  final _loadingVipUsers = <String>{};
 
   final imStatus = IMSdkStatus.connectionSucceeded.obs;
 
@@ -50,6 +53,7 @@ class ConversationLogic extends GetxController {
     }
     list.insertAll(0, newList);
     _sortConversationList();
+    _syncSingleChatIdentityStatus(newList.cast<ConversationInfo>());
   }
 
   /// 提示音
@@ -87,7 +91,8 @@ class ConversationLogic extends GetxController {
 
   /// 删除会话
   void deleteConversation(ConversationInfo info) async {
-    await OpenIM.iMManager.conversationManager.deleteConversationAndDeleteAllMsg(
+    await OpenIM.iMManager.conversationManager
+        .deleteConversationAndDeleteAllMsg(
       conversationID: info.conversationID,
     );
     list.remove(info);
@@ -157,7 +162,10 @@ class ConversationLogic extends GetxController {
 
       final text = IMUtils.parseNtf(info.latestMsg!, isConversation: true);
       if (text != null) return text;
-      if (info.isSingleChat || info.latestMsg!.sendID == OpenIM.iMManager.userID) return IMUtils.parseMsg(info.latestMsg!, isConversation: true);
+      if (info.isSingleChat ||
+          info.latestMsg!.sendID == OpenIM.iMManager.userID) {
+        return IMUtils.parseMsg(info.latestMsg!, isConversation: true);
+      }
 
       return "${info.latestMsg!.senderNickname}: ${IMUtils.parseMsg(info.latestMsg!, isConversation: true)} ";
     } catch (e, s) {
@@ -209,6 +217,20 @@ class ConversationLogic extends GetxController {
     return info.showName!;
   }
 
+  bool isVip(ConversationInfo info) {
+    if (!info.isSingleChat) return false;
+    final userID = info.userID;
+    if (userID == null || userID.isEmpty) return false;
+    return _singleChatVipMap[userID] == true;
+  }
+
+  bool isPretty(ConversationInfo info) {
+    if (!info.isSingleChat) return false;
+    final userID = info.userID;
+    if (userID == null || userID.isEmpty) return false;
+    return _singleChatPrettyMap[userID] == true;
+  }
+
   /// 时间
   String getTime(ConversationInfo info) {
     return IMUtils.getChatTimeline(info.latestMsgSendTime!);
@@ -216,7 +238,7 @@ class ConversationLogic extends GetxController {
 
   /// 未读数
   int getUnreadCount(ConversationInfo info) {
-    return info.unreadCount ?? 0;
+    return info.unreadCount;
   }
 
   bool existUnreadMsg(ConversationInfo info) {
@@ -287,16 +309,20 @@ class ConversationLogic extends GetxController {
     }
   }
 
-  bool get isFailedSdkStatus => imStatus.value == IMSdkStatus.connectionFailed || imStatus.value == IMSdkStatus.syncFailed;
+  bool get isFailedSdkStatus =>
+      imStatus.value == IMSdkStatus.connectionFailed ||
+      imStatus.value == IMSdkStatus.syncFailed;
 
   /// 自定义会话列表排序规则
-  void _sortConversationList() => OpenIM.iMManager.conversationManager.simpleSort(list);
+  void _sortConversationList() =>
+      OpenIM.iMManager.conversationManager.simpleSort(list);
 
   void onRefresh() async {
     late List<ConversationInfo> list;
     try {
       list = await _request(0);
       this.list.assignAll(list);
+      _syncSingleChatIdentityStatus(list);
       if (list.isEmpty || list.length < pageSize) {
         refreshController.loadNoData();
       } else {
@@ -312,6 +338,7 @@ class ConversationLogic extends GetxController {
     try {
       list = await _request(this.list.length);
       this.list.addAll(list);
+      _syncSingleChatIdentityStatus(list);
     } finally {
       if (list.isEmpty || list.length < pageSize) {
         refreshController.loadNoData();
@@ -321,10 +348,50 @@ class ConversationLogic extends GetxController {
     }
   }
 
-  _request(int offset) => OpenIM.iMManager.conversationManager.getConversationListSplit(
+  _request(int offset) =>
+      OpenIM.iMManager.conversationManager.getConversationListSplit(
         offset: offset,
         count: pageSize,
       );
+
+  void _syncSingleChatIdentityStatus(
+      List<ConversationInfo> conversations) async {
+    final userIDs = conversations
+        .where((info) =>
+            info.isSingleChat && info.userID != null && info.userID!.isNotEmpty)
+        .map((info) => info.userID!)
+        .where((userID) =>
+            !_singleChatVipMap.containsKey(userID) &&
+            !_loadingVipUsers.contains(userID))
+        .toSet()
+        .toList();
+    if (userIDs.isEmpty) return;
+
+    _loadingVipUsers.addAll(userIDs);
+    try {
+      final users =
+          await OpenIM.iMManager.userManager.getUsersInfoWithCache(userIDs);
+      var changed = false;
+      for (final user in users) {
+        final ex = user.friendInfo?.ex ?? user.publicInfo?.ex;
+        final isVip = UserExUtil.isVip(ex);
+        final isPretty = UserExUtil.isPretty(ex);
+        final userID = user.userID;
+        if (userID.isEmpty) continue;
+        if (_singleChatVipMap[userID] != isVip) {
+          _singleChatVipMap[userID] = isVip;
+          changed = true;
+        }
+        if (_singleChatPrettyMap[userID] != isPretty) {
+          _singleChatPrettyMap[userID] = isPretty;
+          changed = true;
+        }
+      }
+      if (changed) list.refresh();
+    } finally {
+      _loadingVipUsers.removeAll(userIDs);
+    }
+  }
 
   bool isValidConversation(ConversationInfo info) {
     return info.isValid;
@@ -335,8 +402,10 @@ class ConversationLogic extends GetxController {
     int itemCount = list.length;
     double scrollOffset = scrollController.position.pixels;
     double viewportHeight = scrollController.position.viewportDimension;
-    double scrollRange = scrollController.position.maxScrollExtent - scrollController.position.minScrollExtent;
-    int firstVisibleItemIndex = (scrollOffset / (scrollRange + viewportHeight) * itemCount).floor();
+    double scrollRange = scrollController.position.maxScrollExtent -
+        scrollController.position.minScrollExtent;
+    int firstVisibleItemIndex =
+        (scrollOffset / (scrollRange + viewportHeight) * itemCount).floor();
     return firstVisibleItemIndex;
   }
 
@@ -357,7 +426,8 @@ class ConversationLogic extends GetxController {
     }
 
     if (start > list.length - 1) return;
-    final unreadItem = list.sublist(start).firstWhereOrNull((e) => e.unreadCount! > 0);
+    final unreadItem =
+        list.sublist(start).firstWhereOrNull((e) => e.unreadCount > 0);
     if (null == unreadItem) {
       if (start > 0) {
         scrollController.scrollToIndex(
@@ -379,7 +449,8 @@ class ConversationLogic extends GetxController {
     required int sessionType,
   }) =>
       LoadingView.singleton.wrap(
-          asyncFunction: () => OpenIM.iMManager.conversationManager.getOneConversation(
+          asyncFunction: () =>
+              OpenIM.iMManager.conversationManager.getOneConversation(
                 sourceID: sourceID,
                 sessionType: sessionType,
               ));
@@ -462,11 +533,14 @@ class ConversationLogic extends GetxController {
 
   scan() => AppNavigator.startScan();
 
-  addFriend() => AppNavigator.startAddContactsBySearch(searchType: SearchType.user);
+  addFriend() =>
+      AppNavigator.startAddContactsBySearch(searchType: SearchType.user);
 
-  createGroup() => AppNavigator.startCreateGroup(defaultCheckedList: [OpenIM.iMManager.userInfo]);
+  createGroup() => AppNavigator.startCreateGroup(
+      defaultCheckedList: [OpenIM.iMManager.userInfo]);
 
-  addGroup() => AppNavigator.startAddContactsBySearch(searchType: SearchType.group);
+  addGroup() =>
+      AppNavigator.startAddContactsBySearch(searchType: SearchType.group);
 
   void videoMeeting() => MNavigator.startMeeting();
 

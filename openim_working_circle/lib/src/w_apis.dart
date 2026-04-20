@@ -7,7 +7,7 @@ import 'package:openim_working_circle/src/w_urls.dart';
 import 'package:uuid/uuid.dart';
 
 class WApis {
-  /// 发布工作圈动态
+  /// 发布朋友圈动态
   /// [type] 0 picture  1 video
   static Future publishMoments({
     String? text,
@@ -50,20 +50,22 @@ class WApis {
         allMetas.add(m[thumbKey]!);
         allMetas.add(m[originalKey]!);
       }
-      final result =
-          await Future.wait(allMetas.map((e){
-            final suffix = IMUtils.getSuffix(e);
-            return OpenIM.iMManager.uploadFile(
-              id: const Uuid().v4(),
-              filePath: e,
-              fileName: "${const Uuid().v4()}$suffix",
-            );
-          }));
+      final result = await Future.wait(allMetas.map((e) {
+        final suffix = IMUtils.getSuffix(e);
+        return OpenIM.iMManager.uploadFile(
+          id: const Uuid().v4(),
+          filePath: e,
+          fileName: "${const Uuid().v4()}$suffix",
+        );
+      }));
       if (result.length.isEven) {
         for (int i = 0; i < result.length; i += 2) {
           final thumb = jsonDecode(result[i])['url'];
           final original = jsonDecode(result[i + 1])['url'];
-          metasUrl.add({thumbKey: "$thumb?type=image&width=420&height=420", originalKey: original});
+          metasUrl.add({
+            thumbKey: "$thumb?type=image&width=420&height=420",
+            originalKey: original
+          });
         }
       }
     }
@@ -93,7 +95,7 @@ class WApis {
     );
   }
 
-  /// 一条工作圈详情
+  /// 一条朋友圈详情
   static Future<WorkMoments> getMomentsDetail({
     required String workMomentID,
   }) async {
@@ -105,7 +107,7 @@ class WApis {
     return WorkMoments.fromJson(result['workMoment']);
   }
 
-  /// 获取工作圈列表
+  /// 获取朋友圈列表
   static Future<WorkMomentsList> getMomentsList({
     int pageNumber = 1,
     int showNumber = 20,
@@ -134,7 +136,7 @@ class WApis {
     ).then((value) => WorkMomentsList.fromJson(value));
   }
 
-  /// 点赞工作圈
+  /// 点赞朋友圈
   static Future likeMoments({
     required String workMomentID,
     required bool like,
@@ -146,7 +148,7 @@ class WApis {
     );
   }
 
-  /// 评论工作圈
+  /// 评论朋友圈
   static Future commentMoments({
     required String workMomentID,
     String? replyUserID,

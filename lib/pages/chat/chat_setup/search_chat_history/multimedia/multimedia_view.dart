@@ -36,7 +36,6 @@ class ChatHistoryMultimediaPage extends StatelessWidget {
 
     return ListView.builder(
       itemCount: logic.groupMessage.length,
-      shrinkWrap: true,
       itemBuilder: (_, index) {
         var entry = logic.groupMessage.entries.toList().reversed.elementAt(index);
         return MultimediaItemWidget(

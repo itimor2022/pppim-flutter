@@ -1,7 +1,7 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:openim_common/openim_common.dart'; // For Message type if needed?
 import 'CompatibilityWidgets.dart';
 
 // Note: MessageController logic is NOT fully migrated so this widget might need specific controller adjustments when integrating.
@@ -18,69 +18,132 @@ class ChatRedPacketMessage extends StatelessWidget {
   final dynamic controller; // Changed to dynamic to avoid import issues
 
   const ChatRedPacketMessage({
-    Key? key,
     required this.item,
     required this.msgID,
     required this.controller,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    bool isOpenedState = _isStateOpened(item, controller, msgID);
+    final isOpenedState = _isStateOpened(item, controller, msgID);
+    final primaryText = _getPrimaryText(item);
+    final statusText = _getStatusText(item, controller, msgID);
+    final footerLabel = _getFooterLabel(item);
+    final timeText = _getMessageTime(controller, msgID);
+
     return GestureDetector(
       onTap: () async {
         controller.redPacketCheck(item, msgID);
       },
       child: Container(
-        height: 80.w,
-        width: 220.w,
+        width: 245.w,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.r),
-          color: Colors.transparent,
-          image: DecorationImage(
-            image: AssetImage(
-              'assets/images/${!isOpenedState ? 214 : 215}.png',
-            ),
-            fit: BoxFit.fill,
+          borderRadius: BorderRadius.circular(14.r),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isOpenedState
+                ? const [Color(0xFFE9B2A9), Color(0xFFD9988D)]
+                : const [Color(0xFFE97B68), Color(0xFFD85A47)],
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10.r,
+              offset: Offset(0, 4.w),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if ((item['packetType'] == 3 || item['packetType'] == '3') &&
-                item['recv_nickname'] != null)
-              Container(
-                padding: EdgeInsets.only(left: 70.w, top: 15.w, right: 25.w),
-                child: DefaultText(
-                  text: "给 ${item['recv_nickname']}",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  fontSize: 16.sp,
-                  textColor: Colors.white,
-                ),
-              ),
-            Container(
-              padding: EdgeInsets.only(
-                  left: 60.w,
-                  top: (item['packetType'] == 3 || item['packetType'] == '3') &&
-                          item['recv_nickname'] != null
-                      ? 2.w
-                      : 20.w,
-                  bottom: 0.w,
-                  right: 10.w),
-              child: DefaultText(
-                text: (item['packetType'] == 6 || item['packetType'] == '6')
-                    ? "${item['data'] ?? item['text']} [扫雷]"
-                    : (item['data'] ?? item['text']),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                fontSize: 14.sp,
-                textColor: !isOpenedState ? Colors.white : Colors.white54,
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 14.w, 14.w, 12.w),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(top: 2.w),
+                    child: ColorFiltered(
+                      colorFilter: isOpenedState
+                          ? const ColorFilter.matrix([
+                              0.6, 0.2, 0.2, 0, 8,
+                              0.2, 0.6, 0.2, 0, 8,
+                              0.2, 0.2, 0.6, 0, 8,
+                              0, 0, 0, 1, 0,
+                            ])
+                          : const ColorFilter.mode(
+                              Colors.transparent,
+                              BlendMode.srcOver,
+                            ),
+                      child: Opacity(
+                        opacity: isOpenedState ? 0.78 : 1,
+                        child: Image.asset(
+                          'assets/images/h.png',
+                          width: 46.w,
+                          height: 46.w,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DefaultText(
+                          text: primaryText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w600,
+                          textColor: Colors.white,
+                        ),
+                        SizedBox(height: 6.w),
+                        DefaultText(
+                          text: statusText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          fontSize: 12.sp,
+                          textColor: Colors.white.withOpacity(
+                            isOpenedState ? 0.72 : 0.88,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Status Overlay
-            _buildStatusOverlay(item, controller, msgID),
+            Container(
+              height: 1,
+              margin: EdgeInsets.symmetric(horizontal: 14.w),
+              color: Colors.white.withOpacity(0.35),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 9.w, 14.w, 10.w),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DefaultText(
+                      text: footerLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      fontSize: 13.sp,
+                      textColor: Colors.white.withOpacity(0.92),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  DefaultText(
+                    text: timeText,
+                    fontSize: 13.sp,
+                    textColor: Colors.white.withOpacity(0.92),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -108,32 +171,20 @@ class ChatRedPacketMessage extends StatelessWidget {
     }
   }
 
-  // Helper for status text
-  Widget _buildStatusOverlay(Map item, dynamic logic, String msgID) {
-    // If I opened it locally
+  String _getStatusText(Map item, dynamic logic, String msgID) {
     if (item['isOpen'] == true || _isOpened(logic, msgID)) {
-      return _statusText("已领取");
+      return "红包已被领取";
     }
 
-    // Check if finished (packetStatus=2) or Expired (packetStatus=3)
-    // This requires the message to have updated 'custom data' or 'exMap'
-    // pushed from backend via WS or updated locally after click.
-    // Assuming 'packetStatus' key is injected into exMap or item data.
-    // Since backend logic pushes update, we check item data first.
-    /*
-      Note: Real-time update requires WS handling. 
-      For now, we rely on local 'redPacketStatus' update from check.
-     */
-    // Check local status for finished/expired
     final redPacketStatus = _getRedPacketStatus(logic, msgID);
     if (redPacketStatus == 'finished') {
-      return _statusText("已抢完");
+      return "红包已被抢完";
     }
     if (redPacketStatus == 'expired') {
-      return _statusText("已过期");
+      return "红包已过期";
     }
 
-    return SizedBox();
+    return "领取红包";
   }
 
   String? _getRedPacketStatus(dynamic logic, String msgID) {
@@ -144,18 +195,58 @@ class ChatRedPacketMessage extends StatelessWidget {
           return e.exMap['redPacketStatus'];
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('getRedPacketStatus error: $e');
+    }
     return null;
   }
 
-  Widget _statusText(String text) {
-    return Padding(
-      padding: EdgeInsets.only(left: 70.w, bottom: 10.w),
-      child: DefaultText(
-        text: text,
-        textColor: Colors.white54,
-        fontSize: 12.sp,
-      ),
-    );
+  String _getPrimaryText(Map item) {
+    final packetType = '${item['packetType'] ?? ''}';
+    final recvNickname = item['recv_nickname']?.toString().trim();
+    final rawText = ((item['data'] ?? item['text'])?.toString() ?? '').trim();
+
+    if (packetType == '3' && recvNickname != null && recvNickname.isNotEmpty) {
+      return '给$recvNickname';
+    }
+    if (packetType == '6' && rawText.isNotEmpty) {
+      return '$rawText [扫雷]';
+    }
+    return rawText.isEmpty ? '红包消息' : rawText;
+  }
+
+  String _getFooterLabel(Map item) {
+    switch ('${item['packetType'] ?? ''}') {
+      case '2':
+        return '拼手气红包';
+      case '3':
+        return '专属红包';
+      case '6':
+        return '扫雷红包';
+      case '1':
+      default:
+        return '红包';
+    }
+  }
+
+  String _getMessageTime(dynamic logic, String msgID) {
+    try {
+      if (logic.messageList is! List) return '';
+      for (var e in logic.messageList) {
+        if (e.clientMsgID == msgID && e.sendTime != null) {
+          return _formatHourMinute(e.sendTime);
+        }
+      }
+    } catch (e) {
+      debugPrint('getMessageTime error: $e');
+    }
+    return '';
+  }
+
+  String _formatHourMinute(int milliseconds) {
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(milliseconds);
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }

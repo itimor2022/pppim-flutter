@@ -12,7 +12,6 @@ import '../../routes/app_navigator.dart';
 
 enum LoginType {
   phone,
-  email,
   username,
 }
 
@@ -21,10 +20,8 @@ extension LoginTypeExt on LoginType {
     switch (this) {
       case LoginType.phone:
         return 0;
-      case LoginType.email:
-        return 1;
       case LoginType.username:
-        return 2;
+        return 1;
     }
   }
 
@@ -32,8 +29,6 @@ extension LoginTypeExt on LoginType {
     switch (this) {
       case LoginType.phone:
         return StrRes.phoneNumber;
-      case LoginType.email:
-        return StrRes.email;
       case LoginType.username:
         return StrRes.account;
     }
@@ -43,8 +38,6 @@ extension LoginTypeExt on LoginType {
     switch (this) {
       case LoginType.phone:
         return StrRes.plsEnterPhoneNumber;
-      case LoginType.email:
-        return StrRes.plsEnterEmail;
       case LoginType.username:
         return StrRes.plsEnterAccount;
     }
@@ -53,9 +46,7 @@ extension LoginTypeExt on LoginType {
   String get exclusiveName {
     switch (this) {
       case LoginType.phone:
-        return StrRes.email;
-      case LoginType.email:
-        return StrRes.phoneNumber;
+        return StrRes.account;
       case LoginType.username:
         return StrRes.account;
     }
@@ -74,15 +65,14 @@ class LoginLogic extends GetxController {
   final isPasswordLogin = true.obs;
   final versionInfo = ''.obs;
   final loginType = LoginType.username.obs;
-  String? get email =>
-      loginType.value == LoginType.email ? phoneCtrl.text.trim() : null;
   String? get phone =>
       loginType.value == LoginType.phone ? phoneCtrl.text.trim() : null;
   String? get account =>
       loginType.value == LoginType.username ? phoneCtrl.text.trim() : null;
-  LoginType operateType = LoginType.username;
+  LoginType operateType = LoginType.phone;
 
   _initData() async {
+    loginType.value = LoginType.phone;
     var map = DataSp.getLoginAccount();
     if (map is Map) {
       String? phoneNumber = map["phoneNumber"];
@@ -96,15 +86,6 @@ class LoginLogic extends GetxController {
       if (areaCode != null && areaCode.isNotEmpty) {
         this.areaCode.value = areaCode;
       }
-    }
-
-    int type = await DataSp.getLoginType();
-    if (type == 0) {
-      loginType.value = LoginType.phone;
-    } else if (type == 1) {
-      loginType.value = LoginType.email;
-    } else {
-      loginType.value = LoginType.username;
     }
   }
 
@@ -159,16 +140,12 @@ class LoginLogic extends GetxController {
         return false;
       }
 
-      if (email?.isNotEmpty == true && !phoneCtrl.text.isEmail) {
-        IMViews.showToast(StrRes.plsEnterRightEmail);
-        return false;
-      }
       final password = IMUtils.emptyStrToNull(pwdCtrl.text);
       final code = IMUtils.emptyStrToNull(verificationCodeCtrl.text);
       final data = await Apis.login(
         areaCode: areaCode.value,
         phoneNumber: phone,
-        email: email,
+        email: null,
         account: account,
         password: isPasswordLogin.value ? password : null,
         verificationCode: isPasswordLogin.value ? null : code,
@@ -176,7 +153,6 @@ class LoginLogic extends GetxController {
       final loginAccount = {
         "areaCode": areaCode.value,
         "phoneNumber": phone,
-        "email": email,
         "account": phoneCtrl.text
       };
       await DataSp.putLoginCertificate(data);
@@ -197,27 +173,12 @@ class LoginLogic extends GetxController {
     isPasswordLogin.value = !isPasswordLogin.value;
   }
 
-  void toggleLoginType() {
-    if (loginType.value == LoginType.phone) {
-      loginType.value = LoginType.email;
-    } else if (loginType.value == LoginType.email) {
-      loginType.value = LoginType.username;
-    } else {
-      loginType.value = LoginType.phone;
-    }
-
-    phoneCtrl.text = '';
-  }
+  void toggleLoginType() {}
 
   Future<bool> getVerificationCode() async {
     if (phone?.isNotEmpty == true &&
         !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
       IMViews.showToast(StrRes.plsEnterRightPhone);
-      return false;
-    }
-
-    if (email?.isNotEmpty == true && !phoneCtrl.text.isEmail) {
-      IMViews.showToast(StrRes.plsEnterRightEmail);
       return false;
     }
 
@@ -229,7 +190,7 @@ class LoginLogic extends GetxController {
       asyncFunction: () => Apis.requestVerificationCode(
             areaCode: areaCode.value,
             phoneNumber: phone,
-            email: email,
+            email: null,
             usedFor: 3,
           ));
 
@@ -243,14 +204,21 @@ class LoginLogic extends GetxController {
         binding: ServerConfigBinding(),
       );
 
-  void registerNow() => AppNavigator.startRegister();
+  void registerNow() {
+    operateType = LoginType.phone;
+    AppNavigator.startRegister();
+  }
 
-  void forgetPassword() => AppNavigator.startForgetPassword();
+  void forgetPassword() {
+    operateType = LoginType.phone;
+    AppNavigator.startForgetPassword();
+  }
 
   void getPackageInfo() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final version = packageInfo.version;
     final appName = packageInfo.appName;
+    final buildNumber = packageInfo.buildNumber;
 
     versionInfo.value = '$appName $version';
   }

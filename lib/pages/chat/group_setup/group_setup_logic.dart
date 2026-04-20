@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -66,10 +67,10 @@ class GroupSetupLogic extends GetxController {
       }
     });
 
-    _jasSub = imLogic.joinedGroupAddedSubject.listen((value) {
+    _jasSub = imLogic.joinedGroupAddedSubject.listen((value) async {
       if (value.groupID == groupInfo.value.groupID) {
         isJoinedGroup.value = true;
-        _queryAllInfo();
+        await lock.synchronized(() async => _queryAllInfo());
       }
     });
 
@@ -99,7 +100,7 @@ class GroupSetupLogic extends GetxController {
       if (e.groupID == groupInfo.value.groupID) {
         if (e.userID == OpenIM.iMManager.userID) {
           isJoinedGroup.value = true;
-          _queryAllInfo();
+          await lock.synchronized(() async => _queryAllInfo());
         } else {
           memberList.add(e);
         }
@@ -166,6 +167,31 @@ class GroupSetupLogic extends GetxController {
   bool get isMsgDestruct => conversationInfo.value.isMsgDestruct == true;
 
   int get destructDuration => conversationInfo.value.msgDestructTime ?? 7 * 24 * 60 * 60;
+
+  int _getDisplayMemberCount(GroupInfo value) {
+    if (value.ex?.isNotEmpty == true) {
+      try {
+        final extra = jsonDecode(value.ex!);
+        final displayMemberCount = int.tryParse('${extra['displayMemberCount']}');
+        if (displayMemberCount != null && displayMemberCount > 0) {
+          return displayMemberCount;
+        }
+      } catch (_) {}
+    }
+    return value.memberCount ?? memberList.length;
+  }
+
+  List<GroupMembersInfo> get visibleMemberList =>
+      !appLogic.showGroupAllMembers && !isOwnerOrAdmin
+          ? memberList
+              .where((member) => member.roleLevel == GroupRoleLevel.owner || member.roleLevel == GroupRoleLevel.admin)
+              .toList()
+          : memberList.toList();
+
+  int get visibleMemberCount =>
+      !appLogic.showGroupAllMembers && !isOwnerOrAdmin
+          ? visibleMemberList.length
+          : _getDisplayMemberCount(groupInfo.value);
 
   void _checkIsJoinedGroup() async {
     isJoinedGroup.value = await OpenIM.iMManager.groupManager.isJoinedGroup(
@@ -353,7 +379,7 @@ class GroupSetupLogic extends GetxController {
 
   int length() {
     int buttons = isOwnerOrAdmin ? 2 : 1;
-    return (memberList.length + buttons) > 10 ? 10 : (memberList.length + buttons);
+    return (visibleMemberList.length + buttons) > 10 ? 10 : (visibleMemberList.length + buttons);
   }
 
   Widget itemBuilder({
@@ -362,10 +388,11 @@ class GroupSetupLogic extends GetxController {
     required Widget Function() addButton,
     required Widget Function() delButton,
   }) {
+    final list = visibleMemberList;
     var length = isOwnerOrAdmin ? 8 : 9;
-    if (memberList.length > length) {
+    if (list.length > length) {
       if (index < length) {
-        var info = memberList.elementAt(index);
+        var info = list.elementAt(index);
         return builder(info);
       } else if (index == length) {
         return addButton();
@@ -373,10 +400,10 @@ class GroupSetupLogic extends GetxController {
         return delButton();
       }
     } else {
-      if (index < memberList.length) {
-        var info = memberList.elementAt(index);
+      if (index < list.length) {
+        var info = list.elementAt(index);
         return builder(info);
-      } else if (index == memberList.length) {
+      } else if (index == list.length) {
         return addButton();
       } else {
         return delButton();

@@ -8,6 +8,7 @@ import 'package:openim_common/openim_common.dart';
 import '../../widgets/file_download_progress.dart';
 import 'chat_logic.dart';
 import '../../RedPacket/Widgets/ChatRedPacketMessage.dart';
+import '../../RedPacket/Widgets/ChatTransferMessage.dart';
 
 class ChatPage extends StatelessWidget {
   // final logic = Get.find<ChatLogic>();
@@ -47,7 +48,9 @@ class ChatPage extends StatelessWidget {
         enabledMultiMenu: logic.showMultiMenu(message),
         enabledForwardMenu: logic.showForwardMenu(message),
         enabledDelMenu: logic.showDelMenu(message),
+        enabledDoubleDeleteMenu: logic.showDoubleDeleteMenu(message),
         enabledAddEmojiMenu: logic.showAddEmojiMenu(message),
+        enabledTopMessageMenu: logic.showTopMessageMenu(message),
         onFailedToResend: () => logic.failedResend(message),
         onReEit: () => logic.reEditMessage(message),
         onDestroyMessage: () => logic.deleteMsg(message),
@@ -67,8 +70,11 @@ class ChatPage extends StatelessWidget {
           logic.markRevokedMessage(message);
           logic.revokeMsgV2(message);
         },
+        onTapDoubleDeleteMenu: () => logic.doubleDeleteMsg(message),
         onTapMultiMenu: () => logic.openMultiSelMode(message),
         onTapAddEmojiMenu: () => logic.addEmoji(message),
+        topMessageMenuText: logic.topMessageMenuText(message),
+        onTapTopMessageMenu: () => logic.togglePinnedMessage(message),
         visibilityChange: logic.markMessageAsRead,
         onLongPressLeftAvatar: () {
           logic.onLongPressLeftAvatar(message);
@@ -185,6 +191,9 @@ class ChatPage extends StatelessWidget {
     if (data.isNotEmpty) {
       final viewType = data['viewType'];
       final customType = data['customType'];
+      if (customType == 'GroupPinnedMessageChanged') {
+        return CustomTypeInfo(const SizedBox.shrink(), false, false);
+      }
       if (customType == 'RedPacketClaim') {
         return CustomTypeInfo(
           Container(
@@ -201,6 +210,13 @@ class ChatPage extends StatelessWidget {
           ),
           false, // needBubbleBackground
           false, // needChatItemContainer
+        );
+      }
+      if (data['type'] == 'Transfer') {
+        return CustomTypeInfo(
+          ChatTransferMessage(item: data, message: message),
+          false,
+          true,
         );
       }
       if (viewType == CustomMessageType.call) {
@@ -294,6 +310,67 @@ class ChatPage extends StatelessWidget {
         )
       : const SizedBox();
 
+  Widget get _topPinnedMessageView {
+    final data = logic.pinnedMessage.value;
+    if (data == null) {
+      return const SizedBox();
+    }
+    final sender = (data['senderNickname'] ?? '').toString();
+    final preview = (data['preview'] ?? '').toString();
+    return Container(
+      margin: EdgeInsets.only(left: 10.w, right: 10.w, top: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: Styles.c_F2F8FF,
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ImageRes.notice.toImage
+            ..width = 24.w
+            ..height = 24.h,
+          8.horizontalSpace,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StrRes.pinnedMessage.toText..style = Styles.ts_FF381F_14sp,
+                4.verticalSpace,
+                '${sender.isEmpty ? '' : '$sender: '}$preview'.toText
+                  ..style = Styles.ts_0C1C33_14sp
+                  ..maxLines = 2
+                  ..overflow = TextOverflow.ellipsis,
+              ],
+            ),
+          ),
+          if (logic.canManagePinnedMessage) ...[
+            8.horizontalSpace,
+            ImageRes.closeGroupNotice.toImage
+              ..width = 16.w
+              ..height = 16.h
+              ..onTap = logic.clearPinnedMessage,
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget get _topOverlayView {
+    final hasNotice = logic.announcement.value.isNotEmpty;
+    final hasPinned = logic.pinnedMessage.value != null;
+    if (!hasNotice && !hasPinned) {
+      return const SizedBox();
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasNotice) _topNoticeView,
+        if (hasPinned) _topPinnedMessageView,
+      ],
+    );
+  }
+
   Widget? get _groupCallHintView => logic.participants.isEmpty
       ? null
       : ChatGroupCallHitView(
@@ -344,7 +421,7 @@ class ChatPage extends StatelessWidget {
                   backgroundColor: Styles.c_FFFFFF,
                   // newMessageCount: logic.scrollingCacheMessageList.length,
                   // onSeeNewMessage: logic.scrollToIndex,
-                  topView: _topNoticeView,
+                  topView: _topOverlayView,
                   bottomView: ChatInputBox(
                     allAtMap: logic.atUserNameMappingMap,
                     forceCloseToolboxSub: logic.forceCloseToolbox,
@@ -366,6 +443,8 @@ class ChatPage extends StatelessWidget {
                       onTapFile: logic.onTapFile,
                       onTapLocation: logic.onTapLocation,
                       onTapRedPacket: logic.onTapRedPacket,
+                      onTapTransfer:
+                          logic.isSingleChat ? logic.onTapTransfer : null,
                     ),
                     voiceRecordBar: bar,
                     emojiView: ChatEmojiView(

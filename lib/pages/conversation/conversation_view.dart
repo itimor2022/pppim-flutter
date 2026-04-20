@@ -104,13 +104,17 @@ class ConversationPage extends StatelessWidget {
   Widget _buildConversationItemView(ConversationInfo info) => Slidable(
         endActionPane: ActionPane(
           motion: const ScrollMotion(),
-          extentRatio: logic.existUnreadMsg(info) ? 0.7 : (logic.isPinned(info) ? 0.5 : 0.4),
+          extentRatio: logic.existUnreadMsg(info)
+              ? 0.7
+              : (logic.isPinned(info) ? 0.5 : 0.4),
           children: [
             CustomSlidableAction(
               onPressed: (_) => logic.pinConversation(info),
               flex: logic.isPinned(info) ? 3 : 2,
               backgroundColor: Styles.c_0089FF,
-              child: (logic.isPinned(info) ? StrRes.cancelTop : StrRes.top).toText..style = Styles.ts_FFFFFF_16sp,
+              child:
+                  (logic.isPinned(info) ? StrRes.cancelTop : StrRes.top).toText
+                    ..style = Styles.ts_FFFFFF_16sp,
             ),
             if (logic.existUnreadMsg(info))
               CustomSlidableAction(
@@ -172,8 +176,18 @@ class ConversationPage extends StatelessWidget {
                                   ..maxLines = 1
                                   ..overflow = TextOverflow.ellipsis,
                               ),
+                              if (logic.isPretty(info) ||
+                                  logic.isVip(info)) ...[
+                                6.horizontalSpace,
+                                UserIdentityBadges(
+                                  compact: true,
+                                  isPretty: logic.isPretty(info),
+                                  isVip: logic.isVip(info),
+                                ),
+                              ],
                               const Spacer(),
-                              logic.getTime(info).toText..style = Styles.ts_8E9AB0_12sp,
+                              logic.getTime(info).toText
+                                ..style = Styles.ts_8E9AB0_12sp,
                             ],
                           ),
                           3.verticalSpace,
@@ -186,9 +200,12 @@ class ConversationPage extends StatelessWidget {
                                 prefixSpan: TextSpan(
                                   text: '',
                                   children: [
-                                    if (logic.isNotDisturb(info) && logic.getUnreadCount(info) > 0)
+                                    if (logic.isNotDisturb(info) &&
+                                        logic.getUnreadCount(info) > 0)
                                       TextSpan(
-                                        text: '[${sprintf(StrRes.nPieces, [logic.getUnreadCount(info)])}] ',
+                                        text: '[${sprintf(StrRes.nPieces, [
+                                              logic.getUnreadCount(info)
+                                            ])}] ',
                                         style: Styles.ts_8E9AB0_14sp,
                                       ),
                                     TextSpan(
@@ -214,7 +231,8 @@ class ConversationPage extends StatelessWidget {
                                   ..width = 13.63.w
                                   ..height = 14.07.h
                               else
-                                UnreadCountView(count: logic.getUnreadCount(info)),
+                                UnreadCountView(
+                                    count: logic.getUnreadCount(info)),
                             ],
                           ),
                         ],

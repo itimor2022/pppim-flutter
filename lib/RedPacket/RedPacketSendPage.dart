@@ -478,8 +478,7 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                           ),
 
                         Obx(() {
-                          bool isSweepMine = controller.index.value == 3 &&
-                              !controller.isSingle;
+                          bool isSweepMine = controller.index.value == 3 && !controller.isSingle;
                           return Container(
                             margin: EdgeInsets.only(
                               top: 10.w,

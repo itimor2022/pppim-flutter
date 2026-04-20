@@ -256,6 +256,7 @@ class Apis {
     String? areaCode,
     String? phoneNumber,
     String? email,
+    String? account,
     required int usedFor,
     String? invitationCode,
   }) async {
@@ -265,6 +266,7 @@ class Apis {
         "areaCode": areaCode,
         "phoneNumber": phoneNumber,
         "email": email,
+        "account": account,
         'usedFor': usedFor,
         'invitationCode': invitationCode
       },
@@ -282,6 +284,7 @@ class Apis {
     String? areaCode,
     String? phoneNumber,
     String? email,
+    String? account,
     required String verificationCode,
     required int usedFor,
     String? invitationCode,
@@ -292,6 +295,7 @@ class Apis {
         "phoneNumber": phoneNumber,
         "areaCode": areaCode,
         "email": email,
+        "account": account,
         "verifyCode": verificationCode,
         "usedFor": usedFor,
         // 'operationID': operationID,
@@ -529,44 +533,84 @@ class Apis {
       );
 
   // --- 扫雷群配置 & 机器人相关 ---
-  
+
   static Future<dynamic> getGroupMineConfigs({required String groupID}) =>
-      HttpUtil.post(Urls.getGroupMineConfigs, data: {'group_id': groupID}, options: chatTokenOptions, showErrorToast: false);
+      HttpUtil.post(Urls.getGroupMineConfigs,
+          data: {'group_id': groupID},
+          options: chatTokenOptions,
+          showErrorToast: false);
 
   static Future<dynamic> setGroupMineConfigs({
     required String groupID,
     required List<Map<String, dynamic>> configs,
   }) =>
-      HttpUtil.post(Urls.setGroupMineConfigs, data: {'group_id': groupID, 'configs': configs}, options: chatTokenOptions);
+      HttpUtil.post(Urls.setGroupMineConfigs,
+          data: {'group_id': groupID, 'configs': configs},
+          options: chatTokenOptions);
 
   static Future<dynamic> getGroupBills({
     required String groupID,
     int page = 1,
     int limit = 20,
   }) =>
-      HttpUtil.post(Urls.getGroupBills, data: {'group_id': groupID, 'page': page, 'limit': limit}, options: chatTokenOptions);
+      HttpUtil.post(Urls.getGroupBills,
+          data: {'group_id': groupID, 'page': page, 'limit': limit},
+          options: chatTokenOptions);
 
   static Future<dynamic> toggleRobot({required bool isOn}) =>
-      HttpUtil.post(Urls.toggleRobot, data: {'is_on': isOn}, options: chatTokenOptions);
+      HttpUtil.post(Urls.toggleRobot,
+          data: {'is_on': isOn}, options: chatTokenOptions);
 
-  static Future<dynamic> getRobotStatus() =>
-      HttpUtil.post(Urls.getRobotStatus, options: chatTokenOptions, showErrorToast: false);
+  static Future<dynamic> getRobotStatus() => HttpUtil.post(Urls.getRobotStatus,
+      options: chatTokenOptions, showErrorToast: false);
 
   static Future<dynamic> getGroupMineSetting({required String groupID}) =>
-      HttpUtil.post(Urls.getGroupMineSetting, data: {'group_id': groupID}, options: chatTokenOptions, showErrorToast: false);
+      HttpUtil.post(Urls.getGroupMineSetting,
+          data: {'group_id': groupID},
+          options: chatTokenOptions,
+          showErrorToast: false);
 
-  static Future<dynamic> setGroupMineSetting({required Map<String, dynamic> setting}) =>
-      HttpUtil.post(Urls.setGroupMineSetting, data: {'setting': setting}, options: chatTokenOptions);
+  static Future<dynamic> setGroupMineSetting(
+          {required Map<String, dynamic> setting}) =>
+      HttpUtil.post(Urls.setGroupMineSetting,
+          data: {'setting': setting}, options: chatTokenOptions);
 
   static Future<dynamic> getGroupRobotConfig({required String groupID}) =>
-      HttpUtil.post(Urls.getGroupRobotConfig, data: {'group_id': groupID}, options: chatTokenOptions, showErrorToast: false);
+      HttpUtil.post(Urls.getGroupRobotConfig,
+          data: {'group_id': groupID},
+          options: chatTokenOptions,
+          showErrorToast: false);
 
-  static Future<dynamic> setGroupRobotConfig({required Map<String, dynamic> config}) =>
-      HttpUtil.post(Urls.setGroupRobotConfig, data: {'config': config}, options: chatTokenOptions);
+  static Future<dynamic> setGroupRobotConfig(
+          {required Map<String, dynamic> config}) =>
+      HttpUtil.post(Urls.setGroupRobotConfig,
+          data: {'config': config}, options: chatTokenOptions);
 
   static Future<dynamic> getSpecialRewardConfigs() =>
-      HttpUtil.post(Urls.getSpecialRewardConfigs, options: chatTokenOptions, showErrorToast: false);
+      HttpUtil.post(Urls.getSpecialRewardConfigs,
+          options: chatTokenOptions, showErrorToast: false);
 
-  static Future<dynamic> setSpecialRewardConfigs({required List<Map<String, dynamic>> configs}) =>
-      HttpUtil.post(Urls.setSpecialRewardConfigs, data: {'configs': configs}, options: chatTokenOptions);
+  static Future<dynamic> setSpecialRewardConfigs(
+          {required List<Map<String, dynamic>> configs}) =>
+      HttpUtil.post(Urls.setSpecialRewardConfigs,
+          data: {'configs': configs}, options: chatTokenOptions);
+
+  static Future<dynamic> getMineRewardConfigs(
+          {required String groupID, required int packetCount}) =>
+      HttpUtil.post(Urls.getMineRewardConfigs,
+          data: {'group_id': groupID, 'packet_count': packetCount},
+          options: chatTokenOptions,
+          showErrorToast: false);
+
+  static Future<dynamic> setMineRewardConfigs(
+          {required String groupID,
+          required int packetCount,
+          required List<Map<String, dynamic>> configs}) =>
+      HttpUtil.post(Urls.setMineRewardConfigs,
+          data: {
+            'group_id': groupID,
+            'packet_count': packetCount,
+            'configs': configs
+          },
+          options: chatTokenOptions);
 }

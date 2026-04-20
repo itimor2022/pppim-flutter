@@ -6,22 +6,27 @@ import 'package:openim_common/openim_common.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../../../routes/app_navigator.dart';
+import '../register_mode.dart';
 
 class VerifyPhoneLogic extends GetxController {
   final codeErrorCtrl = StreamController<ErrorAnimationType>();
   final codeEditCtrl = TextEditingController();
   final enabled = false.obs;
   String? phoneNumber;
-  String? email;
+  String? account;
   late String areaCode;
   late int usedFor;
   String? invitationCode;
 
-  String get account => phoneNumber?.isNotEmpty == true ? (areaCode + phoneNumber!) : email!;
+  String get accountValue =>
+      kRegisterByAccount ? (account ?? '') : areaCode + (phoneNumber ?? '');
+
+  String get accountLabel =>
+      kRegisterByAccount ? StrRes.account : StrRes.phoneNumber;
   @override
   void onInit() {
     phoneNumber = Get.arguments['phoneNumber'];
-    email = Get.arguments['email'];
+    account = Get.arguments['account'];
     areaCode = Get.arguments['areaCode'];
     usedFor = Get.arguments['usedFor'];
     invitationCode = Get.arguments['invitationCode'];
@@ -46,16 +51,17 @@ class VerifyPhoneLogic extends GetxController {
   Future<bool> requestVerificationCode() => LoadingView.singleton.wrap(
       asyncFunction: () => Apis.requestVerificationCode(
             areaCode: areaCode,
-            phoneNumber: phoneNumber,
-            email: email,
+            phoneNumber: kRegisterByAccount ? null : phoneNumber,
+            account: kRegisterByAccount ? account : null,
             usedFor: usedFor,
             invitationCode: invitationCode,
           ));
 
-  Future checkVerificationCode(String verificationCode) => Apis.checkVerificationCode(
+  Future checkVerificationCode(String verificationCode) =>
+      Apis.checkVerificationCode(
         areaCode: areaCode,
-        phoneNumber: phoneNumber,
-        email: email,
+        phoneNumber: kRegisterByAccount ? null : phoneNumber,
+        account: kRegisterByAccount ? account : null,
         verificationCode: verificationCode,
         usedFor: usedFor,
         invitationCode: invitationCode,
@@ -69,12 +75,12 @@ class VerifyPhoneLogic extends GetxController {
       AppNavigator.startSetPassword(
         areaCode: areaCode,
         phoneNumber: phoneNumber,
-        email: email,
+        account: account,
         verificationCode: value,
         usedFor: usedFor,
         invitationCode: invitationCode,
       );
-    } catch (e, s) {
+    } catch (e) {
       shake();
     }
   }

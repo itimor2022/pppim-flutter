@@ -3,16 +3,12 @@ import 'package:get/get.dart';
 import 'package:openim/routes/app_navigator.dart';
 import 'package:openim_common/openim_common.dart';
 
-import '../login/login_logic.dart';
-
 class ForgetPasswordLogic extends GetxController {
   final phoneCtrl = TextEditingController();
   final verificationCodeCtrl = TextEditingController();
   final areaCode = "+86".obs;
   final enabled = false.obs;
-  final loginController = Get.find<LoginLogic>();
-  String? get email => loginController.operateType == LoginType.email ? phoneCtrl.text.trim() : null;
-  String? get phone => loginController.operateType == LoginType.phone ? phoneCtrl.text.trim() : null;
+  String? get phone => phoneCtrl.text.trim();
   @override
   void onClose() {
     phoneCtrl.dispose();
@@ -28,7 +24,8 @@ class ForgetPasswordLogic extends GetxController {
   }
 
   _onChanged() {
-    enabled.value = phoneCtrl.text.trim().isNotEmpty && verificationCodeCtrl.text.trim().isNotEmpty;
+    enabled.value = phoneCtrl.text.trim().isNotEmpty &&
+        verificationCodeCtrl.text.trim().isNotEmpty;
   }
 
   void openCountryCodePicker() async {
@@ -37,13 +34,8 @@ class ForgetPasswordLogic extends GetxController {
   }
 
   Future<bool> getVerificationCode() async {
-    if (phone?.isNotEmpty == true && !IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
+    if (!IMUtils.isMobile(areaCode.value, phoneCtrl.text)) {
       IMViews.showToast(StrRes.plsEnterRightPhone);
-      return false;
-    }
-
-    if (email?.isNotEmpty == true && !phoneCtrl.text.isEmail) {
-      IMViews.showToast(StrRes.plsEnterRightEmail);
       return false;
     }
 
@@ -56,7 +48,6 @@ class ForgetPasswordLogic extends GetxController {
       asyncFunction: () => Apis.requestVerificationCode(
             areaCode: areaCode.value,
             phoneNumber: phone,
-            email: email,
             usedFor: 2,
           ));
 
@@ -64,7 +55,6 @@ class ForgetPasswordLogic extends GetxController {
       asyncFunction: () => Apis.checkVerificationCode(
             areaCode: areaCode.value,
             phoneNumber: phone,
-            email: email,
             verificationCode: verificationCodeCtrl.text,
             usedFor: 2,
           ));
@@ -74,7 +64,6 @@ class ForgetPasswordLogic extends GetxController {
     AppNavigator.startResetPassword(
       areaCode: areaCode.value,
       phoneNumber: phone,
-      email: email,
       verificationCode: verificationCodeCtrl.text,
     );
   }

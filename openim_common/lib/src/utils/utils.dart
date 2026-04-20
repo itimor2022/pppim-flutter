@@ -868,6 +868,10 @@ class IMUtils {
             content = '[红包] ${map['text'] ?? "恭喜发财"}';
             break;
           }
+          if (map['type'] == 'Transfer') {
+            content = '[转账] ${map['text'] ?? map['remark'] ?? ""}';
+            break;
+          }
           var customData = map['data'];
           switch (customType) {
             case CustomMessageType.call:
@@ -961,6 +965,17 @@ class IMUtils {
                 'packet_id': map['packet_id'] ?? map['id'],
                 'senderNickname': message.senderNickname,
                 'senderFaceUrl': message.senderFaceUrl,
+              };
+            }
+            if (map['type'] == 'Transfer') {
+              return {
+                'viewType': 'Transfer',
+                'type': 'Transfer',
+                'content': '[转账] ${map['text'] ?? map['remark'] ?? ""}',
+                'amount': map['amount'],
+                'remark': map['remark'],
+                'recv_user_id': map['recv_user_id'],
+                'recv_nickname': map['recv_nickname'],
               };
             }
             switch (customType) {

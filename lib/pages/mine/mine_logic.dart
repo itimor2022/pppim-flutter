@@ -27,6 +27,10 @@ class MineLogic extends GetxController {
 
   void walletBalance() => Get.toNamed(AppRoutes.walletBalance);
 
+  void signIn() => AppNavigator.startSignIn();
+
+  void withdraw() => Get.toNamed(AppRoutes.withdraw);
+
   void setPayPassword() => Get.toNamed(AppRoutes.setPayPassword);
 
   void logout() async {

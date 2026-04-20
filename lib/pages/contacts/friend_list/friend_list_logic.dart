@@ -1,12 +1,18 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
-import 'package:azlistview/azlistview.dart';
+
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
 import 'package:openim/routes/app_navigator.dart';
 import 'package:openim_common/openim_common.dart';
 
 import '../../../core/controller/im_controller.dart';
+
+List<ISUserInfo> _computeAZList(List<ISUserInfo> list) {
+  return IMUtils.convertToAZList(list).cast<ISUserInfo>();
+}
+
 
 class FriendListLogic extends GetxController {
   final imLoic = Get.find<IMController>();
@@ -50,11 +56,11 @@ class FriendListLogic extends GetxController {
                   ? ISUserInfo.fromJson(fullUser.friendInfo!.toJson())
                   : ISUserInfo.fromJson(fullUser.publicInfo!.toJson());
               return user;
-            }).toList())
-        .then((list) => IMUtils.convertToAZList(list));
+            }).toList());
 
+    final sortedList = await compute(_computeAZList, list);
     onUserIDList(userIDList);
-    friendList.assignAll(list.cast<ISUserInfo>());
+    friendList.assignAll(sortedList);
   }
 
   void onUserIDList(List<String> userIDList) {}
@@ -88,18 +94,12 @@ class FriendListLogic extends GetxController {
     _addUser(user.toJson());
   }
 
-  void _addUser(Map<String, dynamic> json) {
+  void _addUser(Map<String, dynamic> json) async {
     final info = ISUserInfo.fromJson(json);
-    friendList.add(IMUtils.setAzPinyinAndTag(info) as ISUserInfo);
-
-    // A-Z sort.
-    SuspensionUtil.sortListBySuspensionTag(friendList);
-
-    // show sus tag.
-    SuspensionUtil.setShowSuspensionStatus(friendList);
-    // IMUtil.convertToAZList(friendList);
-
-    // friendList.refresh();
+    var list = friendList.toList();
+    list.add(info);
+    final sortedList = await compute(_computeAZList, list);
+    friendList.assignAll(sortedList);
   }
 
   void viewFriendInfo(ISUserInfo info) => AppNavigator.startUserProfilePane(

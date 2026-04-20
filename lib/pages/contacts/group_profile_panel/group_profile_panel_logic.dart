@@ -35,36 +35,41 @@ class GroupProfilePanelLogic extends GetxController {
     super.onInit();
   }
 
-  _onChanged(dynamic value) {
-    if (value is GroupApplicationInfo) {
-      if (value.groupID == groupInfo.value.groupID && value.handleResult == 1) {
-        if (!isJoined.value) {
-          isJoined.value = true;
-          _getGroupInfo();
-          _getMembers();
+  bool _isLoading = false;
+
+  _onChanged(dynamic value) async {
+    if (_isLoading) return;
+    _isLoading = true;
+    try {
+      if (value is GroupApplicationInfo) {
+        if (value.groupID == groupInfo.value.groupID && value.handleResult == 1) {
+          if (!isJoined.value) {
+            isJoined.value = true;
+            await Future.wait([_getGroupInfo(), _getMembers()]);
+          }
+        }
+      } else if (value is GroupInfo) {
+        if (value.groupID == groupInfo.value.groupID) {
+          if (!isJoined.value) {
+            isJoined.value = true;
+            await Future.wait([_getGroupInfo(), _getMembers()]);
+          }
+        }
+      } else if (value is GroupMembersInfo) {
+        if (value.groupID == groupInfo.value.groupID &&
+            value.userID == OpenIM.iMManager.userID) {
+          if (!isJoined.value) {
+            isJoined.value = true;
+            await Future.wait([_getGroupInfo(), _getMembers()]);
+          }
         }
       }
-    } else if (value is GroupInfo) {
-      if (value.groupID == groupInfo.value.groupID) {
-        if (!isJoined.value) {
-          isJoined.value = true;
-          _getGroupInfo();
-          _getMembers();
-        }
-      }
-    } else if (value is GroupMembersInfo) {
-      if (value.groupID == groupInfo.value.groupID &&
-          value.userID == OpenIM.iMManager.userID) {
-        if (!isJoined.value) {
-          isJoined.value = true;
-          _getGroupInfo();
-          _getMembers();
-        }
-      }
+    } finally {
+      _isLoading = false;
     }
   }
 
-  _getGroupInfo() async {
+  Future<void> _getGroupInfo() async {
     var list = await OpenIM.iMManager.groupManager.getGroupsInfo(
       groupIDList: [groupInfo.value.groupID],
     );
@@ -86,7 +91,7 @@ class GroupProfilePanelLogic extends GetxController {
     );
   }
 
-  _getMembers() async {
+  Future<void> _getMembers() async {
     var list = await OpenIM.iMManager.groupManager.getGroupMemberList(
       groupID: groupInfo.value.groupID,
       count: 10,

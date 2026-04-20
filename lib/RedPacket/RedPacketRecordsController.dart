@@ -152,9 +152,9 @@ class RadBagItem {
 
     // 计算值
     final totalAmountFen =
-        double.tryParse(json['total_amount']?.toString() ?? "0") ?? 0;
+        int.tryParse(json['total_amount']?.toString() ?? "0") ?? 0;
     final remainAmountFen =
-        double.tryParse(json['remain_amount']?.toString() ?? "0") ?? 0;
+        int.tryParse(json['remain_amount']?.toString() ?? "0") ?? 0;
 
     final totalAmountYuan = _formatFen(json['total_amount']);
 

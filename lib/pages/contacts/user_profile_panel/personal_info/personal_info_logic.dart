@@ -39,6 +39,7 @@ class PersonalInfoLogic extends GetxController {
         val?.telephone = info.telephone;
         val?.phoneNumber = info.phoneNumber;
         val?.email = info.email;
+        val?.ex = info.ex;
       });
     }
   }
@@ -77,6 +78,18 @@ class PersonalInfoLogic extends GetxController {
       IMUtils.emptyStrToNull(userProfilesLogic.userInfo.value.email) ??
       IMUtils.emptyStrToNull(userFullInfo.value.email) ??
       '-';
+
+  bool get isVip =>
+      UserExUtil.isVip(userProfilesLogic.userInfo.value.ex) ||
+      UserExUtil.isVip(userFullInfo.value.ex);
+
+  bool get isPretty =>
+      UserExUtil.isPretty(userProfilesLogic.userInfo.value.ex) ||
+      UserExUtil.isPretty(userFullInfo.value.ex);
+
+  String? get badgeEx =>
+      IMUtils.emptyStrToNull(userProfilesLogic.userInfo.value.ex) ??
+      IMUtils.emptyStrToNull(userFullInfo.value.ex);
 
   clickPhoneNumber() => _callSystemPhone(userFullInfo.value.phoneNumber);
 

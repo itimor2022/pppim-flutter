@@ -195,6 +195,12 @@ class StrRes {
 
   static String get cancelTop => 'cancelTop'.tr;
 
+  static String get pinMessage => 'pinMessage'.tr;
+
+  static String get unpinMessage => 'unpinMessage'.tr;
+
+  static String get pinnedMessage => 'pinnedMessage'.tr;
+
   static String get markHasRead => 'markHasRead'.tr;
 
   static String get delete => 'delete'.tr;
@@ -320,6 +326,8 @@ class StrRes {
 
   static String get menuRevoke => 'menuRevoke'.tr;
 
+  static String get menuDoubleDelete => 'menuDoubleDelete'.tr;
+
   static String get menuAdd => 'menuAdd'.tr;
 
   static String get nMessage => 'nMessage'.tr;
@@ -331,6 +339,9 @@ class StrRes {
   static String get groupVideoCallHint => 'groupVideoCallHint'.tr;
 
   static String get reEdit => 'reEdit'.tr;
+
+  static String get confirmDoubleDeleteMessage =>
+      'confirmDoubleDeleteMessage'.tr;
 
   static String get download => 'download'.tr;
 

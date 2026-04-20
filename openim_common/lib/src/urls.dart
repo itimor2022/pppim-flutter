@@ -47,6 +47,9 @@ class Urls {
       "${Config.appAuthUrl}/RedPacketService/GetRedPacketDetail";
   static final getWalletBalance =
       "${Config.appAuthUrl}/RedPacketService/GetWalletBalance";
+  static final transfer = "${Config.appAuthUrl}/RedPacketService/Transfer";
+  static final applyWithdraw =
+      "${Config.appAuthUrl}/RedPacketService/ApplyWithdraw";
   static final setPayPassword =
       "${Config.appAuthUrl}/RedPacketService/SetPayPassword";
   static final verifyPayPassword =
@@ -59,7 +62,20 @@ class Urls {
       "${Config.appAuthUrl}/RedPacketService/GetRecvRedPacketList";
   static final getWalletRecords =
       "${Config.appAuthUrl}/RedPacketService/GetWalletRecords";
-      
+  static final getSignInStatus =
+      "${Config.appAuthUrl}/RedPacketService/GetSignInStatus";
+  static final signIn = "${Config.appAuthUrl}/RedPacketService/SignIn";
+  static final getSignInCalendar =
+      "${Config.appAuthUrl}/RedPacketService/GetSignInCalendar";
+  static final getGroupPinnedMessage =
+      "${Config.appAuthUrl}/RedPacketService/GetGroupPinnedMessage";
+  static final setGroupPinnedMessage =
+      "${Config.appAuthUrl}/RedPacketService/SetGroupPinnedMessage";
+  static final clearGroupPinnedMessage =
+      "${Config.appAuthUrl}/RedPacketService/ClearGroupPinnedMessage";
+  static final doubleDeleteMessage =
+      "${Config.appAuthUrl}/RedPacketService/DoubleDeleteMessage";
+
   /// 群管理 & 扫雷专用接口
   static final getGroupMineConfigs =
       "${Config.appAuthUrl}/RedPacketService/GetGroupMineConfigs";
@@ -71,12 +87,22 @@ class Urls {
       "${Config.appAuthUrl}/RedPacketService/ToggleRobot";
   static final getRobotStatus =
       "${Config.appAuthUrl}/RedPacketService/GetRobotStatus";
-      
+
   // New Settings endpoints
-  static final getGroupMineSetting = "${Config.appAuthUrl}/RedPacketService/GetGroupMineSetting";
-  static final setGroupMineSetting = "${Config.appAuthUrl}/RedPacketService/SetGroupMineSetting";
-  static final getGroupRobotConfig = "${Config.appAuthUrl}/RedPacketService/GetGroupRobotConfig";
-  static final setGroupRobotConfig = "${Config.appAuthUrl}/RedPacketService/SetGroupRobotConfig";
-  static final getSpecialRewardConfigs = "${Config.appAuthUrl}/RedPacketService/GetSpecialRewardConfigs";
-  static final setSpecialRewardConfigs = "${Config.appAuthUrl}/RedPacketService/SetSpecialRewardConfigs";
+  static final getGroupMineSetting =
+      "${Config.appAuthUrl}/RedPacketService/GetGroupMineSetting";
+  static final setGroupMineSetting =
+      "${Config.appAuthUrl}/RedPacketService/SetGroupMineSetting";
+  static final getGroupRobotConfig =
+      "${Config.appAuthUrl}/RedPacketService/GetGroupRobotConfig";
+  static final setGroupRobotConfig =
+      "${Config.appAuthUrl}/RedPacketService/SetGroupRobotConfig";
+  static final getSpecialRewardConfigs =
+      "${Config.appAuthUrl}/RedPacketService/GetSpecialRewardConfigs";
+  static final setSpecialRewardConfigs =
+      "${Config.appAuthUrl}/RedPacketService/SetSpecialRewardConfigs";
+  static final getMineRewardConfigs =
+      "${Config.appAuthUrl}/RedPacketService/GetMineRewardConfigs";
+  static final setMineRewardConfigs =
+      "${Config.appAuthUrl}/RedPacketService/SetMineRewardConfigs";
 }
