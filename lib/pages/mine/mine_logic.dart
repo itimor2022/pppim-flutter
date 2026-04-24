@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:openim_common/openim_common.dart';
 
+import '../../core/controller/app_controller.dart';
 import '../../core/controller/im_controller.dart';
 import '../../core/controller/push_controller.dart';
 import '../../routes/app_navigator.dart';
@@ -10,6 +11,9 @@ import '../../routes/app_pages.dart';
 
 class MineLogic extends GetxController {
   final imLogic = Get.find<IMController>();
+  final appLogic = Get.find<AppController>();
+
+  bool get openSignIn => appLogic.openSignIn;
   final pushLogic = Get.find<PushController>();
   late StreamSubscription kickedOfflineSub;
 

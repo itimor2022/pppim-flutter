@@ -223,6 +223,7 @@ class HomeLogic extends SuperController {
   }
 
   Future<void> _checkDailySignIn() async {
+    if (!initLogic.openSignIn) return;
     if (_signInDialogChecked || _checkingSignInDialog) return;
     if (Get.currentRoute != AppRoutes.home) {
       Future.delayed(const Duration(milliseconds: 300), _checkDailySignIn);

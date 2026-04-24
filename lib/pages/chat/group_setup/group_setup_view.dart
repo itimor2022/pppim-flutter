@@ -88,7 +88,9 @@ class GroupSetupPage extends StatelessWidget {
                 ),
                 if (!logic.isOwner)
                   _buildItemView(
-                    text: logic.isJoinedGroup.value ? StrRes.exitGroup : StrRes.delete,
+                    text: logic.isJoinedGroup.value
+                        ? StrRes.exitGroup
+                        : StrRes.delete,
                     textStyle: Styles.ts_FF381F_17sp,
                     showRightArrow: true,
                     onTap: logic.quitGroup,
@@ -130,7 +132,8 @@ class GroupSetupPage extends StatelessWidget {
                     text: logic.groupInfo.value.groupName,
                     textStyle: Styles.ts_FFFFFF_14sp,
                     isGroup: true,
-                    onTap: logic.isOwnerOrAdmin ? logic.modifyGroupAvatar : null,
+                    onTap:
+                        logic.isOwnerOrAdmin ? logic.modifyGroupAvatar : null,
                   ),
                   if (logic.isOwnerOrAdmin)
                     Align(
@@ -154,8 +157,11 @@ class GroupSetupPage extends StatelessWidget {
                       children: [
                         ConstrainedBox(
                             constraints: BoxConstraints(maxWidth: 200.w),
-                            child: (logic.groupInfo.value.groupName ?? '').toText..style = Styles.ts_0C1C33_17sp),
-                        '(${logic.visibleMemberCount})'.toText..style = Styles.ts_0C1C33_17sp,
+                            child:
+                                (logic.groupInfo.value.groupName ?? '').toText
+                                  ..style = Styles.ts_0C1C33_17sp),
+                        '(${logic.visibleMemberCount})'.toText
+                          ..style = Styles.ts_0C1C33_17sp,
                         6.horizontalSpace,
                         if (logic.isOwnerOrAdmin)
                           ImageRes.editName.toImage
@@ -216,7 +222,8 @@ class GroupSetupPage extends StatelessWidget {
                               textStyle: Styles.ts_FFFFFF_14sp,
                               onTap: () => logic.viewMemberInfo(info),
                             ),
-                            if (logic.groupInfo.value.ownerUserID == info.userID)
+                            if (logic.groupInfo.value.ownerUserID ==
+                                info.userID)
                               // if (info.roleLevel == GroupRoleLevel.owner)
                               Positioned(
                                 bottom: 0.h,
@@ -273,23 +280,26 @@ class GroupSetupPage extends StatelessWidget {
               height: 1,
               margin: EdgeInsets.symmetric(horizontal: 10.w),
             ),
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: logic.viewGroupMembers,
-              child: Container(
-                padding: EdgeInsets.only(left: 12.w, right: 16.w),
-                height: 46.h,
-                child: Row(
-                  children: [
-                    sprintf(StrRes.viewAllGroupMembers, [logic.visibleMemberCount]).toText..style = Styles.ts_0C1C33_17sp,
-                    const Spacer(),
-                    ImageRes.rightArrow.toImage
-                      ..width = 24.w
-                      ..height = 24.h,
-                  ],
+            if (logic.canViewAllMembers)
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: logic.viewGroupMembers,
+                child: Container(
+                  padding: EdgeInsets.only(left: 12.w, right: 16.w),
+                  height: 46.h,
+                  child: Row(
+                    children: [
+                      sprintf(StrRes.viewAllGroupMembers,
+                          [logic.visibleMemberCount]).toText
+                        ..style = Styles.ts_0C1C33_17sp,
+                      const Spacer(),
+                      ImageRes.rightArrow.toImage
+                        ..width = 24.w
+                        ..height = 24.h,
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       );

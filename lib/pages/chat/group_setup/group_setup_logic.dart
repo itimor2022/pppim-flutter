@@ -81,14 +81,17 @@ class GroupSetupLogic extends GetxController {
     });
 
     _mISub = imLogic.memberInfoChangedSubject.listen((e) {
-      if (e.groupID == groupInfo.value.groupID && e.userID == myGroupMembersInfo.value.userID) {
+      if (e.groupID == groupInfo.value.groupID &&
+          e.userID == myGroupMembersInfo.value.userID) {
         myGroupMembersInfo.update((val) {
           val?.nickname = e.nickname;
           val?.roleLevel = e.roleLevel;
         });
       }
-      if (e.groupID == groupInfo.value.groupID && e.userID == groupInfo.value.ownerUserID) {
-        var index = memberList.indexWhere((element) => element.userID == groupInfo.value.ownerUserID);
+      if (e.groupID == groupInfo.value.groupID &&
+          e.userID == groupInfo.value.ownerUserID) {
+        var index = memberList.indexWhere(
+            (element) => element.userID == groupInfo.value.ownerUserID);
         if (index == -1) {
           memberList.insert(0, e);
         } else if (index != 0) {
@@ -154,7 +157,10 @@ class GroupSetupLogic extends GetxController {
 
   bool get isOwnerOrAdmin => isOwner || isAdmin;
 
-  bool get isAdmin => myGroupMembersInfo.value.roleLevel == GroupRoleLevel.admin;
+  bool get canViewAllMembers => isOwnerOrAdmin || appLogic.showGroupAllMembers;
+
+  bool get isAdmin =>
+      myGroupMembersInfo.value.roleLevel == GroupRoleLevel.admin;
 
   bool get isOwner => groupInfo.value.ownerUserID == OpenIM.iMManager.userID;
 
@@ -166,13 +172,15 @@ class GroupSetupLogic extends GetxController {
 
   bool get isMsgDestruct => conversationInfo.value.isMsgDestruct == true;
 
-  int get destructDuration => conversationInfo.value.msgDestructTime ?? 7 * 24 * 60 * 60;
+  int get destructDuration =>
+      conversationInfo.value.msgDestructTime ?? 7 * 24 * 60 * 60;
 
   int _getDisplayMemberCount(GroupInfo value) {
     if (value.ex?.isNotEmpty == true) {
       try {
         final extra = jsonDecode(value.ex!);
-        final displayMemberCount = int.tryParse('${extra['displayMemberCount']}');
+        final displayMemberCount =
+            int.tryParse('${extra['displayMemberCount']}');
         if (displayMemberCount != null && displayMemberCount > 0) {
           return displayMemberCount;
         }
@@ -181,17 +189,17 @@ class GroupSetupLogic extends GetxController {
     return value.memberCount ?? memberList.length;
   }
 
-  List<GroupMembersInfo> get visibleMemberList =>
-      !appLogic.showGroupAllMembers && !isOwnerOrAdmin
-          ? memberList
-              .where((member) => member.roleLevel == GroupRoleLevel.owner || member.roleLevel == GroupRoleLevel.admin)
-              .toList()
-          : memberList.toList();
+  List<GroupMembersInfo> get visibleMemberList => !canViewAllMembers
+      ? memberList
+          .where((member) =>
+              member.roleLevel == GroupRoleLevel.owner ||
+              member.roleLevel == GroupRoleLevel.admin)
+          .toList()
+      : memberList.toList();
 
-  int get visibleMemberCount =>
-      !appLogic.showGroupAllMembers && !isOwnerOrAdmin
-          ? visibleMemberList.length
-          : _getDisplayMemberCount(groupInfo.value);
+  int get visibleMemberCount => !canViewAllMembers
+      ? visibleMemberList.length
+      : _getDisplayMemberCount(groupInfo.value);
 
   void _checkIsJoinedGroup() async {
     isJoinedGroup.value = await OpenIM.iMManager.groupManager.isJoinedGroup(
@@ -312,11 +320,13 @@ class GroupSetupLogic extends GetxController {
         conversationInfo: conversationInfo.value,
       );
 
-  void searchChatHistoryPicture() => AppNavigator.startSearchChatHistoryMultimedia(
+  void searchChatHistoryPicture() =>
+      AppNavigator.startSearchChatHistoryMultimedia(
         conversationInfo: conversationInfo.value,
       );
 
-  void searchChatHistoryVideo() => AppNavigator.startSearchChatHistoryMultimedia(
+  void searchChatHistoryVideo() =>
+      AppNavigator.startSearchChatHistoryMultimedia(
         conversationInfo: conversationInfo.value,
         multimediaType: MultimediaType.video,
       );
@@ -327,7 +337,8 @@ class GroupSetupLogic extends GetxController {
 
   void _removeConversation() async {
     // 删除群会话
-    await OpenIM.iMManager.conversationManager.deleteConversationAndDeleteAllMsg(
+    await OpenIM.iMManager.conversationManager
+        .deleteConversationAndDeleteAllMsg(
       conversationID: conversationInfo.value.conversationID,
     );
 
@@ -379,7 +390,9 @@ class GroupSetupLogic extends GetxController {
 
   int length() {
     int buttons = isOwnerOrAdmin ? 2 : 1;
-    return (visibleMemberList.length + buttons) > 10 ? 10 : (visibleMemberList.length + buttons);
+    return (visibleMemberList.length + buttons) > 10
+        ? 10
+        : (visibleMemberList.length + buttons);
   }
 
   Widget itemBuilder({
@@ -422,7 +435,8 @@ class GroupSetupLogic extends GetxController {
 
   void toggleNotDisturb() {
     LoadingView.singleton.wrap(
-        asyncFunction: () => OpenIM.iMManager.conversationManager.setConversationRecvMessageOpt(
+        asyncFunction: () =>
+            OpenIM.iMManager.conversationManager.setConversationRecvMessageOpt(
               conversationID: conversationID,
               status: !isNotDisturb ? 2 : 0,
             ));
@@ -434,7 +448,8 @@ class GroupSetupLogic extends GetxController {
       rightText: StrRes.clearAll,
     ));
     if (confirm == true) {
-      await OpenIM.iMManager.conversationManager.clearConversationAndDeleteAllMsg(
+      await OpenIM.iMManager.conversationManager
+          .clearConversationAndDeleteAllMsg(
         conversationID: conversationID,
       );
       chatLogic.clearAllMessage();
@@ -479,7 +494,8 @@ class GroupSetupLogic extends GetxController {
     }
   }
 
-  void viewMemberInfo(GroupMembersInfo membersInfo) => AppNavigator.startUserProfilePane(
+  void viewMemberInfo(GroupMembersInfo membersInfo) =>
+      AppNavigator.startUserProfilePane(
         userID: membersInfo.userID!,
         nickname: membersInfo.nickname,
         faceURL: membersInfo.faceURL,
@@ -541,6 +557,8 @@ class GroupSetupLogic extends GetxController {
 
   void setConversationMsgDestructTime(int duration) {
     LoadingView.singleton.wrap(
-        asyncFunction: () => OpenIM.iMManager.conversationManager.setConversationMsgDestructTime(conversationID: conversationID, duration: duration));
+        asyncFunction: () => OpenIM.iMManager.conversationManager
+            .setConversationMsgDestructTime(
+                conversationID: conversationID, duration: duration));
   }
 }

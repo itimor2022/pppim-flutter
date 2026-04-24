@@ -28,11 +28,13 @@ class AppController extends SuperController with UpgradeManger {
 
   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  final initializationSettingsAndroid = const AndroidInitializationSettings('@mipmap/ic_launcher');
+  final initializationSettingsAndroid =
+      const AndroidInitializationSettings('@mipmap/ic_launcher');
 
   /// Note: permissions aren't requested here just to demonstrate that can be
   /// done later
-  final DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
     requestAlertPermission: false,
     requestBadgePermission: false,
     requestSoundPermission: false,
@@ -48,7 +50,8 @@ class AppController extends SuperController with UpgradeManger {
 
   RTCBridge? rtcBridge = PackageBridge.rtcBridge;
 
-  bool get shouldMuted => meetingBridge?.hasConnection == true || rtcBridge?.hasConnection == true;
+  bool get shouldMuted =>
+      meetingBridge?.hasConnection == true || rtcBridge?.hasConnection == true;
 
   final _ring = 'assets/audio/message_ring.wav';
   final _audioPlayer = AudioPlayer(
@@ -69,7 +72,29 @@ class AppController extends SuperController with UpgradeManger {
   /// needInvitationCodeRegister
   /// robots
   final clientConfigMap = <String, dynamic>{}.obs;
-  bool get showGroupAllMembers => false;
+  bool get openSignIn {
+    final value =
+        clientConfigMap['openSignIn'] ?? clientConfigMap['open_sign_in'];
+    if (value is num) return value == 1;
+    if (value is bool) return value;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == '1' || normalized == 'true';
+    }
+    return false;
+  }
+
+  bool get showGroupAllMembers {
+    final value = clientConfigMap['allowViewGroupMembers'] ??
+        clientConfigMap['allow_view_group_members'];
+    if (value is num) return value == 1;
+    if (value is bool) return value;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == '1' || normalized == 'true';
+    }
+    return false;
+  }
 
   Future<void> runningBackground(bool run) async {
     Logger.print('-----App running background : $run-------------');
@@ -104,24 +129,35 @@ class AppController extends SuperController with UpgradeManger {
   }
 
   void _requestPermissions() {
-    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
-    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
           alert: true,
           badge: true,
           sound: true,
         );
   }
 
-  Future<void> showNotification(im.Message message, {bool showNotification = true}) async {
+  Future<void> showNotification(im.Message message,
+      {bool showNotification = true}) async {
     if (_isGlobalNotDisturb() ||
             message.attachedInfoElem?.notSenderNotificationPush == true ||
             message.contentType == im.MessageType.typing ||
-            message.sendID == OpenIM.iMManager.userID /* ||
+            message.sendID ==
+                OpenIM.iMManager
+                    .userID /* ||
         message.contentType! >= 1000*/
         ) return;
 
     // 开启免打扰的不提示
-    var sourceID = message.sessionType == ConversationType.single ? message.sendID : message.groupID;
+    var sourceID = message.sessionType == ConversationType.single
+        ? message.sendID
+        : message.groupID;
     if (sourceID != null && message.sessionType != null) {
       var i = await OpenIM.iMManager.conversationManager.getOneConversation(
         sourceID: sourceID,
@@ -142,10 +178,17 @@ class AppController extends SuperController with UpgradeManger {
       if (Platform.isAndroid) {
         final id = seq;
 
-        const androidPlatformChannelSpecifics = AndroidNotificationDetails('chat', 'OpenIM聊天消息',
-            channelDescription: '来自OpenIM的信息', importance: Importance.max, priority: Priority.high, ticker: 'ticker');
-        const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
-        await flutterLocalNotificationsPlugin.show(id, '您收到了一条新消息', '消息内容：.....', platformChannelSpecifics, payload: '');
+        const androidPlatformChannelSpecifics = AndroidNotificationDetails(
+            'chat', 'OpenIM聊天消息',
+            channelDescription: '来自OpenIM的信息',
+            importance: Importance.max,
+            priority: Priority.high,
+            ticker: 'ticker');
+        const NotificationDetails platformChannelSpecifics =
+            NotificationDetails(android: androidPlatformChannelSpecifics);
+        await flutterLocalNotificationsPlugin.show(
+            id, '您收到了一条新消息', '消息内容：.....', platformChannelSpecifics,
+            payload: '');
       }
     }
   }
@@ -161,13 +204,15 @@ class AppController extends SuperController with UpgradeManger {
         notificationTitle: 'OpenIM 后台运行中',
         notificationText: '保持连接活跃，确保消息及时送达',
         notificationImportance: AndroidNotificationImportance.High,
-        notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
+        notificationIcon:
+            AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
         enableWifiLock: true,
         shouldRequestBatteryOptimizationsOff: true,
       );
       _backgroundExecutionReady =
           await FlutterBackground.initialize(androidConfig: androidConfig);
-      Logger.print('android background execution ready: $_backgroundExecutionReady');
+      Logger.print(
+          'android background execution ready: $_backgroundExecutionReady');
     } catch (e) {
       _backgroundExecutionReady = false;
       Logger.print('init android background execution error: $e');
@@ -177,18 +222,27 @@ class AppController extends SuperController with UpgradeManger {
   Future<void> _startForegroundService() async {
     if (!Platform.isAndroid || _foregroundServiceStarted) return;
     await getAppInfo();
-    const androidPlatformChannelSpecifics = AndroidNotificationDetails('pro', 'OpenIM后台进程',
-        channelDescription: '保证app能收到信息', importance: Importance.max, priority: Priority.high, ticker: 'ticker');
+    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'pro', 'OpenIM后台进程',
+        channelDescription: '保证app能收到信息',
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'ticker');
 
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.startForegroundService(1, packageInfo!.appName, '正在运行...', notificationDetails: androidPlatformChannelSpecifics, payload: '');
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.startForegroundService(1, packageInfo!.appName, '正在运行...',
+            notificationDetails: androidPlatformChannelSpecifics, payload: '');
     _foregroundServiceStarted = true;
   }
 
   Future<void> _stopForegroundService() async {
     if (!Platform.isAndroid || !_foregroundServiceStarted) return;
-    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.stopForegroundService();
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.stopForegroundService();
     _foregroundServiceStarted = false;
   }
 
@@ -351,7 +405,10 @@ class AppController extends SuperController with UpgradeManger {
     // 获取系统静音、震动状态
     RingerModeStatus ringerStatus = await SoundMode.ringerModeStatus;
 
-    if (!_audioPlayer.playerState.playing && isAllowBeep && (ringerStatus == RingerModeStatus.normal || ringerStatus == RingerModeStatus.unknown)) {
+    if (!_audioPlayer.playerState.playing &&
+        isAllowBeep &&
+        (ringerStatus == RingerModeStatus.normal ||
+            ringerStatus == RingerModeStatus.unknown)) {
       _audioPlayer.setAsset(_ring, package: 'openim_common');
       _audioPlayer.setLoopMode(LoopMode.off);
       _audioPlayer.setVolume(1.0);
@@ -359,7 +416,9 @@ class AppController extends SuperController with UpgradeManger {
     }
 
     if (isAllowVibration &&
-        (ringerStatus == RingerModeStatus.normal || ringerStatus == RingerModeStatus.vibrate || ringerStatus == RingerModeStatus.unknown)) {
+        (ringerStatus == RingerModeStatus.normal ||
+            ringerStatus == RingerModeStatus.vibrate ||
+            ringerStatus == RingerModeStatus.unknown)) {
       if (await Vibration.hasVibrator() == true) {
         Vibration.vibrate();
       }
