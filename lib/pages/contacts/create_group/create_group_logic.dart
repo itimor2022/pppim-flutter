@@ -36,8 +36,17 @@ class CreateGroupLogic extends GetxController {
     return name;
   }
 
+  bool get _canCreateGroup {
+    final ex = OpenIM.iMManager.userInfo.ex;
+    return UserExUtil.isVip(ex) || UserExUtil.isPretty(ex);
+  }
+
   completeCreation() async {
     if (allList.length > 2) {
+      if (!_canCreateGroup) {
+        IMViews.showToast('没有权限建群');
+        return;
+      }
       // convertMemberRole(UserInfo u) => GroupMemberRole(userID: u.userID);
       var info = await LoadingView.singleton.wrap(
         asyncFunction: () => OpenIM.iMManager.groupManager.createGroup(
