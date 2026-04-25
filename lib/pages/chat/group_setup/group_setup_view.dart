@@ -160,8 +160,8 @@ class GroupSetupPage extends StatelessWidget {
                             child:
                                 (logic.groupInfo.value.groupName ?? '').toText
                                   ..style = Styles.ts_0C1C33_17sp),
-                        '(${logic.visibleMemberCount})'.toText
-                          ..style = Styles.ts_0C1C33_17sp,
+                        // '(${logic.visibleMemberCount})'.toText
+                        //   ..style = Styles.ts_0C1C33_17sp,
                         6.horizontalSpace,
                         if (logic.isOwnerOrAdmin)
                           ImageRes.editName.toImage

@@ -189,7 +189,7 @@ class GroupSetupLogic extends GetxController {
     return value.memberCount ?? memberList.length;
   }
 
-  List<GroupMembersInfo> get visibleMemberList => !canViewAllMembers
+  List<GroupMembersInfo> get visibleMemberList => !isOwnerOrAdmin
       ? memberList
           .where((member) =>
               member.roleLevel == GroupRoleLevel.owner ||
