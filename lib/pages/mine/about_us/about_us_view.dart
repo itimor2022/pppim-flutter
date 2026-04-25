@@ -44,25 +44,25 @@ class AboutUsPage extends StatelessWidget {
                   color: Styles.c_E8EAEF,
                   height: .5,
                 ),
-                if (Platform.isAndroid)
-                  GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: logic.checkUpdate,
-                    child: Container(
-                      height: 57.h,
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Row(
-                        children: [
-                          StrRes.checkNewVersion.toText
-                            ..style = Styles.ts_0C1C33_17sp,
-                          const Spacer(),
-                          ImageRes.rightArrow.toImage
-                            ..width = 24.w
-                            ..height = 24.h,
-                        ],
-                      ),
-                    ),
-                  ),
+                // if (Platform.isAndroid)
+                //   GestureDetector(
+                //     behavior: HitTestBehavior.translucent,
+                //     onTap: logic.checkUpdate,
+                //     child: Container(
+                //       height: 57.h,
+                //       padding: EdgeInsets.symmetric(horizontal: 16.w),
+                //       child: Row(
+                //         children: [
+                //           StrRes.checkNewVersion.toText
+                //             ..style = Styles.ts_0C1C33_17sp,
+                //           const Spacer(),
+                //           ImageRes.rightArrow.toImage
+                //             ..width = 24.w
+                //             ..height = 24.h,
+                //         ],
+                //       ),
+                //     ),
+                //   ),
                 GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: logic.uploadLogs,

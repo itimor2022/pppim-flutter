@@ -305,7 +305,7 @@ class Apis {
   }
 
   /// 蒲公英更新检测
-  static Future<UpgradeInfoV2> checkUpgradeV2() {
+  static Future<UpgradeInfoV2> checkUpgradeV2({String? buildVersion}) {
     return dio.post<Map<String, dynamic>>(
       'https://www.pgyer.com/apiv2/app/check',
       options: Options(
@@ -314,6 +314,7 @@ class Apis {
       data: {
         '_api_key': 'cc0b409e935111c7a5423379a9587604',
         'appKey': '51d8cbdc6349b7303ac7a0e01cdd684d',
+        if (buildVersion?.isNotEmpty == true) 'buildVersion': buildVersion,
       },
     ).then((resp) {
       Map<String, dynamic> map = resp.data!;

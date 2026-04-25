@@ -12,6 +12,7 @@ import 'package:rxdart/rxdart.dart';
 import '../widgets/upgrade_view.dart';
 
 class UpgradeManger {
+  static const bool _enableUpgradeCheck = false;
   PackageInfo? packageInfo;
   UpgradeInfoV2? upgradeInfoV2;
   var isShowUpgradeDialog = false;
@@ -23,7 +24,8 @@ class UpgradeManger {
   }
 
   void ignoreUpdate() {
-    DataSp.putIgnoreVersion(upgradeInfoV2!.buildVersion! + upgradeInfoV2!.buildVersionNo!);
+    DataSp.putIgnoreVersion(
+        upgradeInfoV2!.buildVersion! + upgradeInfoV2!.buildVersionNo!);
     Get.back();
   }
 
@@ -40,7 +42,8 @@ class UpgradeManger {
     if (Platform.isAndroid) {
       final result = await Permissions.notification();
       if (!result) {
-        await IMViews.showToast(StrRes.upgradePermissionTips, duration: 2.seconds);
+        await IMViews.showToast(StrRes.upgradePermissionTips,
+            duration: 2.seconds);
         openAppSettings();
         return;
       }
@@ -55,7 +58,8 @@ class UpgradeManger {
           cachePath: path,
           onProgress: (int count, int total) {
             subject.add(count / total);
-            notificationService.createNotification(100, ((count / total) * 100).toInt(), 0, '下载中');
+            notificationService.createNotification(
+                100, ((count / total) * 100).toInt(), 0, '下载中');
             if (count == total) {
               AppInstaller.installApk(path);
             }
@@ -72,10 +76,11 @@ class UpgradeManger {
   }
 
   void checkUpdate() async {
+    if (!_enableUpgradeCheck) return;
     if (!Platform.isAndroid) return;
     LoadingView.singleton.wrap(asyncFunction: () async {
       await getAppInfo();
-      return Apis.checkUpgradeV2();
+      return Apis.checkUpgradeV2(buildVersion: packageInfo?.version);
     }).then((value) {
       upgradeInfoV2 = value;
       if (!canUpdate) {
@@ -96,12 +101,15 @@ class UpgradeManger {
 
   /// 自动检测更新
   autoCheckVersionUpgrade() async {
+    if (!_enableUpgradeCheck) return;
     if (!Platform.isAndroid) return;
     if (isShowUpgradeDialog || isNowIgnoreUpdate) return;
     await getAppInfo();
-    upgradeInfoV2 = await Apis.checkUpgradeV2();
+    upgradeInfoV2 =
+        await Apis.checkUpgradeV2(buildVersion: packageInfo?.version);
     String? ignore = DataSp.getIgnoreVersion();
-    if (ignore == upgradeInfoV2!.buildVersion! + upgradeInfoV2!.buildVersionNo!) {
+    if (ignore ==
+        upgradeInfoV2!.buildVersion! + upgradeInfoV2!.buildVersionNo!) {
       isNowIgnoreUpdate = true;
       return;
     }
@@ -120,14 +128,19 @@ class UpgradeManger {
     ).whenComplete(() => isShowUpgradeDialog = false);
   }
 
-  bool get canUpdate => packageInfo!.version + packageInfo!.buildNumber != upgradeInfoV2!.buildVersion! + upgradeInfoV2!.buildVersionNo!;
+  bool get canUpdate =>
+      upgradeInfoV2?.needForceUpdate == true ||
+      upgradeInfoV2?.buildHaveNewVersion == true;
 }
 
 class NotificationService {
   // Handle displaying of notifications.
-  static final NotificationService _notificationService = NotificationService._internal();
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  final AndroidInitializationSettings _androidInitializationSettings = const AndroidInitializationSettings('@mipmap/ic_launcher');
+  static final NotificationService _notificationService =
+      NotificationService._internal();
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  final AndroidInitializationSettings _androidInitializationSettings =
+      const AndroidInitializationSettings('@mipmap/ic_launcher');
 
   factory NotificationService() {
     return _notificationService;
@@ -138,7 +151,8 @@ class NotificationService {
   }
 
   void init() async {
-    final InitializationSettings initializationSettings = InitializationSettings(
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
       android: _androidInitializationSettings,
     );
     await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
@@ -146,7 +160,8 @@ class NotificationService {
 
   void createNotification(int count, int i, int id, String status) {
     //show the notifications.
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails('progress channel', 'progress channel',
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'progress channel', 'progress channel',
         channelDescription: 'progress channel description',
         channelShowBadge: false,
         importance: Importance.max,
@@ -155,7 +170,9 @@ class NotificationService {
         showProgress: true,
         maxProgress: count,
         progress: i);
-    var platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
-    _flutterLocalNotificationsPlugin.show(id, status, '$i%', platformChannelSpecifics, payload: 'item x');
+    var platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    _flutterLocalNotificationsPlugin
+        .show(id, status, '$i%', platformChannelSpecifics, payload: 'item x');
   }
 }
