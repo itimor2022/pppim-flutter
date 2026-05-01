@@ -79,7 +79,8 @@ class GroupListPage extends StatelessWidget {
                   children: [
                     (info.groupName ?? '').toText
                       ..style = Styles.ts_0C1C33_17sp,
-                    sprintf(StrRes.nPerson, [info.memberCount]).toText
+                    sprintf(StrRes.nPerson, [logic.displayMemberCount(info)])
+                        .toText
                       ..style = Styles.ts_8E9AB0_14sp,
                   ],
                 ),

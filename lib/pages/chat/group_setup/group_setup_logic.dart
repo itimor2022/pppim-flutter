@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
 import 'package:openim/pages/chat/group_setup/edit_name/edit_name_logic.dart';
+import 'package:openim/utils/group_member_count_util.dart';
 import 'package:openim_common/openim_common.dart';
 import 'package:sprintf/sprintf.dart';
 import 'package:synchronized/synchronized.dart';
@@ -175,19 +175,9 @@ class GroupSetupLogic extends GetxController {
   int get destructDuration =>
       conversationInfo.value.msgDestructTime ?? 7 * 24 * 60 * 60;
 
-  int _getDisplayMemberCount(GroupInfo value) {
-    if (value.ex?.isNotEmpty == true) {
-      try {
-        final extra = jsonDecode(value.ex!);
-        final displayMemberCount =
-            int.tryParse('${extra['displayMemberCount']}');
-        if (displayMemberCount != null && displayMemberCount > 0) {
-          return displayMemberCount;
-        }
-      } catch (_) {}
-    }
-    return value.memberCount ?? memberList.length;
-  }
+  int _getDisplayMemberCount(GroupInfo value) => value.memberCount == null
+      ? memberList.length
+      : GroupMemberCountUtil.getDisplayMemberCount(value);
 
   List<GroupMembersInfo> get visibleMemberList => !isOwnerOrAdmin
       ? memberList

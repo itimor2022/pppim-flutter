@@ -4,6 +4,7 @@ import 'package:common_utils/common_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:openim/utils/group_member_count_util.dart';
 import 'package:openim_common/openim_common.dart';
 import 'package:sprintf/sprintf.dart';
 
@@ -110,7 +111,13 @@ class GroupProfilePanelPage extends StatelessWidget {
                   WidgetSpan(child: 12.horizontalSpace),
                   TextSpan(
                     text: sprintf(
-                        StrRes.nPerson, [logic.groupInfo.value.memberCount]),
+                      StrRes.nPerson,
+                      [
+                        GroupMemberCountUtil.getDisplayMemberCount(
+                          logic.groupInfo.value,
+                        ),
+                      ],
+                    ),
                     style: Styles.ts_8E9AB0_17sp,
                   ),
                 ],

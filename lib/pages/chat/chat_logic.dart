@@ -33,14 +33,14 @@ import '../../core/controller/im_controller.dart';
 import '../../core/im_callback.dart';
 import '../../routes/app_navigator.dart';
 import '../../routes/app_pages.dart';
+import '../../utils/group_member_count_util.dart';
 import '../contacts/select_contacts/select_contacts_logic.dart';
 import '../conversation/conversation_logic.dart';
 import 'group_setup/group_member_list/group_member_list_logic.dart';
 
 class ChatLogic extends GetxController {
   // Current flutter_openim_sdk version does not expose DeleteMsgsNotification.
-  static const _deleteMessageNotificationType =
-      2102;
+  static const _deleteMessageNotificationType = 2102;
   final imLogic = Get.find<IMController>();
   final appLogic = Get.find<AppController>();
   final conversationLogic = Get.find<ConversationLogic>();
@@ -156,7 +156,10 @@ class ChatLogic extends GetxController {
       (groupMemberRoleLevel.value == GroupRoleLevel.owner ||
           groupMemberRoleLevel.value == GroupRoleLevel.admin);
 
-  String get memberStr => isSingleChat ? "" : "($memberCount)";
+  int _getDisplayMemberCount(GroupInfo? info) =>
+      info == null ? 0 : GroupMemberCountUtil.getDisplayMemberCount(info);
+
+  String get memberStr => isSingleChat ? "" : "(${memberCount.value})";
 
   /// 是当前聊天窗口
   bool isCurrentChat(Message message) {
@@ -393,7 +396,9 @@ class ChatLogic extends GetxController {
         nickname.value = value.groupName ?? '';
         faceUrl.value = value.faceURL ?? '';
         groupMutedStatus.value = value.status ?? 0;
-        memberCount.value = value.memberCount ?? 0;
+        groupInfo = value;
+        groupOwnerID = value.ownerUserID;
+        memberCount.value = _getDisplayMemberCount(value);
         _mutedClearAllInput();
       }
     });
@@ -851,7 +856,8 @@ class ChatLogic extends GetxController {
       CustomDialog(title: StrRes.confirmDoubleDeleteMessage),
     );
     if (confirm != true) return;
-    LoadingView.singleton.wrap(asyncFunction: () => _doubleDeleteMessage(message));
+    LoadingView.singleton
+        .wrap(asyncFunction: () => _doubleDeleteMessage(message));
   }
 
   /// 批量删除
@@ -1967,7 +1973,7 @@ class ChatLogic extends GetxController {
         announcement.value = groupInfo?.notification ?? '';
       }
       groupMutedStatus.value = groupInfo?.status ?? 0;
-      memberCount.value = groupInfo?.memberCount ?? 0;
+      memberCount.value = _getDisplayMemberCount(groupInfo);
       _queryMyGroupMemberInfo();
       _queryGroupCallingInfo();
     }
@@ -2504,7 +2510,9 @@ class ChatLogic extends GetxController {
   }
 
   Future<void> clearPinnedMessage() async {
-    if (!isGroupChat || !canManagePinnedMessage || pinnedMessage.value == null) {
+    if (!isGroupChat ||
+        !canManagePinnedMessage ||
+        pinnedMessage.value == null) {
       return;
     }
     await RedPacketApi.clearGroupPinnedMessage(groupID: groupID!);
@@ -2529,7 +2537,8 @@ class ChatLogic extends GetxController {
   }
 
   bool _handleGroupPinnedSyncMessage(Message message) {
-    if (!isGroupChat || message.contentType != MessageType.customMsgOnlineOnly) {
+    if (!isGroupChat ||
+        message.contentType != MessageType.customMsgOnlineOnly) {
       return false;
     }
     try {

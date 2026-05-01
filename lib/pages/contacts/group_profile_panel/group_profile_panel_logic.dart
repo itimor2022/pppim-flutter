@@ -42,7 +42,8 @@ class GroupProfilePanelLogic extends GetxController {
     _isLoading = true;
     try {
       if (value is GroupApplicationInfo) {
-        if (value.groupID == groupInfo.value.groupID && value.handleResult == 1) {
+        if (value.groupID == groupInfo.value.groupID &&
+            value.handleResult == 1) {
           if (!isJoined.value) {
             isJoined.value = true;
             await Future.wait([_getGroupInfo(), _getMembers()]);
@@ -79,6 +80,7 @@ class GroupProfilePanelLogic extends GetxController {
         val?.groupName = info.groupName;
         val?.faceURL = info.faceURL;
         val?.memberCount = info.memberCount;
+        val?.ex = info.ex;
         val?.groupType = info.groupType;
         val?.createTime = info.createTime;
       });

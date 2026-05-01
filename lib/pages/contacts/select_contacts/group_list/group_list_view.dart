@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:openim/utils/group_member_count_util.dart';
 import 'package:openim_common/openim_common.dart';
 import 'package:sprintf/sprintf.dart';
 
@@ -99,7 +100,10 @@ class SelectContactsFromGroupPage extends StatelessWidget {
                           ..style = Styles.ts_0C1C33_17sp
                           ..maxLines = 1
                           ..overflow = TextOverflow.ellipsis,
-                        sprintf(StrRes.nPerson, [info.memberCount]).toText
+                        sprintf(
+                          StrRes.nPerson,
+                          [GroupMemberCountUtil.getDisplayMemberCount(info)],
+                        ).toText
                           ..style = Styles.ts_8E9AB0_14sp,
                       ],
                     ),

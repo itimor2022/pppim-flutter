@@ -1,6 +1,7 @@
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
 import 'package:openim/routes/app_navigator.dart';
+import 'package:openim/utils/group_member_count_util.dart';
 
 import '../../conversation/conversation_logic.dart';
 
@@ -23,6 +24,9 @@ class GroupListLogic extends GetxController {
 
   void _getGroupRelatedToMe() async {
     final list = await OpenIM.iMManager.groupManager.getJoinedGroupList();
+    allList.clear();
+    iCreatedList.clear();
+    iJoinedList.clear();
     allList.addAll(list);
     for (var e in list) {
       if (e.ownerUserID == OpenIM.iMManager.userID) {
@@ -44,4 +48,7 @@ class GroupListLogic extends GetxController {
   }
 
   void searchGroup() => AppNavigator.startSearchGroup();
+
+  int displayMemberCount(GroupInfo info) =>
+      GroupMemberCountUtil.getDisplayMemberCount(info);
 }
