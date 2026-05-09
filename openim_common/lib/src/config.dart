@@ -16,7 +16,7 @@ class Config {
 
   /// ⭐ 远程线路配置
   static const String _configUrl =
-      "https://cq-1369911702.cos.ap-chongqing.myqcloud.com/iam.txt";
+      "https://cq-1369911702.cos.ap-chongqing.myqcloud.com/im/ms.txt";
 
   /// ⭐ 当前生效host
   static String _host = _defaultHost;
@@ -112,34 +112,37 @@ class Config {
 
   /// ⭐ 并发测速（核心优化）
   static Future<String?> _findBestHost(List<String> hosts) async {
-    final futures = <Future<_HostResult>>[];
+    final completer = Completer<String?>();
 
     for (var host in hosts) {
       for (var url in _buildUrls(host)) {
-        futures.add(_testHost(url));
+        _testHost(url).then((result) {
+          if (result.success && !completer.isCompleted) {
+            completer.complete(result.host);
+          }
+        });
       }
     }
 
-    final results = await Future.wait(futures);
+    /// ⭐ 超时兜底（防止全部挂死）
+    Future.delayed(const Duration(seconds: 5), () {
+      if (!completer.isCompleted) {
+        completer.complete(null);
+      }
+    });
 
-    /// 过滤成功
-    final success = results.where((e) => e.success).toList();
-
-    if (success.isEmpty) return null;
-
-    /// 按耗时排序（越快越好）
-    success.sort((a, b) => a.duration.compareTo(b.duration));
-
-    return success.first.host;
+    return completer.future;
   }
 
   /// 构建URL
   static List<String> _buildUrls(String host) {
-    if (host.startsWith("http")) return [host];
+    if (host.startsWith("http")) {
+      return ["$host/ping.js"];
+    }
 
     return [
-      "https://$host",
-      "http://$host",
+      "https://$host/ping.js",
+      "http://$host/ping.js",
     ];
   }
 
@@ -149,12 +152,13 @@ class Config {
 
     try {
       final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 5);
+        ..connectionTimeout = const Duration(seconds: 3);
 
       final request = await client.getUrl(Uri.parse(url));
       request.followRedirects = true;
 
-      final response = await request.close();
+      final response =
+          await request.close().timeout(const Duration(seconds: 3));
 
       stopwatch.stop();
 
@@ -168,8 +172,11 @@ class Config {
         success: ok,
         duration: stopwatch.elapsedMilliseconds,
       );
-    } catch (_) {
+    } catch (e) {
       stopwatch.stop();
+
+      Logger.print("检测失败: $url -> $e");
+
       return _HostResult(
         host: Uri.parse(url).host,
         success: false,
