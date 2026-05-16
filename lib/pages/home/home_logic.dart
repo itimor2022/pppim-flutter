@@ -14,6 +14,7 @@ import '../../RedPacket/Api/RedPacketApi.dart';
 import '../sign_in/widgets/sign_in_dialog.dart';
 import '../../routes/app_navigator.dart';
 import '../../routes/app_pages.dart';
+import '../../widgets/announcement_dialog.dart';
 import '../../widgets/screen_lock_title.dart';
 
 class HomeLogic extends SuperController {
@@ -34,6 +35,7 @@ class HomeLogic extends SuperController {
   bool _signInDialogChecked = false;
   final _signInDialogLoading = false.obs;
   bool _checkingSignInDialog = false;
+  bool _checkingAnnouncementDialog = false;
 
   Function()? onScrollToUnreadMessage;
 
@@ -114,7 +116,8 @@ class HomeLogic extends SuperController {
     cacheLogic.initCallRecords();
     cacheLogic.initFavoriteEmoji();
     if (!_isShowScreenLock) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _checkDailySignIn());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _checkAnnouncementThenDailySignIn());
     }
     super.onReady();
   }
@@ -156,7 +159,7 @@ class HomeLogic extends SuperController {
         onUnlocked: () {
           _isShowScreenLock = false;
           Get.back();
-          _checkDailySignIn();
+          _checkAnnouncementThenDailySignIn();
         },
         onMaxRetries: (_) async {
           Get.back();
@@ -205,6 +208,9 @@ class HomeLogic extends SuperController {
           _getRTCInvitationStart();
         }
       });
+    }
+    if (!_isShowScreenLock && Get.currentRoute == AppRoutes.home) {
+      _checkAnnouncementThenDailySignIn();
     }
   }
 
@@ -272,5 +278,67 @@ class HomeLogic extends SuperController {
     final yuan = fen ~/ 100;
     final cent = (fen % 100).abs().toString().padLeft(2, '0');
     return '$yuan.$cent';
+  }
+
+  Future<void> _checkAnnouncementThenDailySignIn() async {
+    await _checkAnnouncement();
+    await _checkDailySignIn();
+  }
+
+  Future<void> _checkAnnouncement() async {
+    if (_checkingAnnouncementDialog) return;
+    if (Get.currentRoute != AppRoutes.home) {
+      Future.delayed(
+        const Duration(milliseconds: 300),
+        _checkAnnouncementThenDailySignIn,
+      );
+      return;
+    }
+    if (Get.isDialogOpen == true) {
+      Future.delayed(
+        const Duration(milliseconds: 500),
+        _checkAnnouncementThenDailySignIn,
+      );
+      return;
+    }
+
+    _checkingAnnouncementDialog = true;
+    try {
+      await initLogic.queryClientConfig();
+      final enabled = _configBool('announcementEnabled') ||
+          _configBool('announcement_enabled');
+      final type =
+          '${initLogic.clientConfigMap['announcementType'] ?? initLogic.clientConfigMap['announcement_type'] ?? 'text'}';
+      final content =
+          '${initLogic.clientConfigMap['announcementContent'] ?? initLogic.clientConfigMap['announcement_content'] ?? ''}'
+              .trim();
+      if (enabled && content.isNotEmpty) {
+        await Get.dialog(
+          AnnouncementDialog(
+            type: type == 'image'
+                ? AnnouncementType.image
+                : AnnouncementType.text,
+            content: content,
+          ),
+          barrierDismissible: true,
+          routeSettings: const RouteSettings(name: 'announcement_dialog'),
+        );
+      }
+    } catch (e) {
+      Logger.print('check announcement error: $e');
+    } finally {
+      _checkingAnnouncementDialog = false;
+    }
+  }
+
+  bool _configBool(String key) {
+    final value = initLogic.clientConfigMap[key];
+    if (value is num) return value == 1;
+    if (value is bool) return value;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == '1' || normalized == 'true';
+    }
+    return false;
   }
 }

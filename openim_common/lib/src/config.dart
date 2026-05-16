@@ -112,37 +112,34 @@ class Config {
 
   /// ⭐ 并发测速（核心优化）
   static Future<String?> _findBestHost(List<String> hosts) async {
-    final completer = Completer<String?>();
+    final futures = <Future<_HostResult>>[];
 
     for (var host in hosts) {
       for (var url in _buildUrls(host)) {
-        _testHost(url).then((result) {
-          if (result.success && !completer.isCompleted) {
-            completer.complete(result.host);
-          }
-        });
+        futures.add(_testHost(url));
       }
     }
 
-    /// ⭐ 超时兜底（防止全部挂死）
-    Future.delayed(const Duration(seconds: 5), () {
-      if (!completer.isCompleted) {
-        completer.complete(null);
-      }
-    });
+    final results = await Future.wait(futures);
 
-    return completer.future;
+    /// 过滤成功
+    final success = results.where((e) => e.success).toList();
+
+    if (success.isEmpty) return null;
+
+    /// 按耗时排序（越快越好）
+    success.sort((a, b) => a.duration.compareTo(b.duration));
+
+    return success.first.host;
   }
 
   /// 构建URL
   static List<String> _buildUrls(String host) {
-    if (host.startsWith("http")) {
-      return ["$host/ping.js"];
-    }
+    if (host.startsWith("http")) return [host];
 
     return [
-      "https://$host/ping.js",
-      "http://$host/ping.js",
+      "https://$host",
+      "http://$host",
     ];
   }
 
@@ -152,13 +149,12 @@ class Config {
 
     try {
       final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 3);
+        ..connectionTimeout = const Duration(seconds: 5);
 
       final request = await client.getUrl(Uri.parse(url));
       request.followRedirects = true;
 
-      final response =
-          await request.close().timeout(const Duration(seconds: 3));
+      final response = await request.close();
 
       stopwatch.stop();
 
@@ -172,11 +168,8 @@ class Config {
         success: ok,
         duration: stopwatch.elapsedMilliseconds,
       );
-    } catch (e) {
+    } catch (_) {
       stopwatch.stop();
-
-      Logger.print("检测失败: $url -> $e");
-
       return _HostResult(
         host: Uri.parse(url).host,
         success: false,

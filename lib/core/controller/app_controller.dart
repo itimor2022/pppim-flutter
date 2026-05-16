@@ -96,6 +96,17 @@ class AppController extends SuperController with UpgradeManger {
     return false;
   }
 
+  int get revokeMessageDurationMinutes {
+    final value = clientConfigMap['revokeMessageDurationMinutes'] ??
+        clientConfigMap['revoke_message_duration_minutes'];
+    if (value is num) return value.toInt() > 0 ? value.toInt() : 5;
+    if (value is String) {
+      final minutes = int.tryParse(value.trim());
+      return minutes != null && minutes > 0 ? minutes : 5;
+    }
+    return 5;
+  }
+
   Future<void> runningBackground(bool run) async {
     Logger.print('-----App running background : $run-------------');
 

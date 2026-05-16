@@ -51,9 +51,19 @@ class WorkbenchLogic extends GetxController {
       if (info.url!.endsWith('.wgt')) {
         _runWGT(uniMPInfo);
       } else {
-        Get.to(() => H5Container(url: info.url!, title: info.name));
+        Get.to(() => H5Container(url: _appendUid(info.url!), title: info.name));
       }
     }
+  }
+
+  String _appendUid(String rawUrl) {
+    final userID = DataSp.userID;
+    if (userID == null || userID.isEmpty) return rawUrl;
+    final uri = Uri.tryParse(rawUrl);
+    if (uri == null) return rawUrl;
+    final queryParameters = Map<String, String>.from(uri.queryParameters);
+    queryParameters['uid'] = userID;
+    return uri.replace(queryParameters: queryParameters).toString();
   }
 
   void _runWGT(Rx<UniMPInfo> uniMPInfo) {

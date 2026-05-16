@@ -41,6 +41,7 @@ import 'group_setup/group_member_list/group_member_list_logic.dart';
 class ChatLogic extends GetxController {
   // Current flutter_openim_sdk version does not expose DeleteMsgsNotification.
   static const _deleteMessageNotificationType = 2102;
+  static const _largeGroupReadReceiptMemberLimit = 1000;
   final imLogic = Get.find<IMController>();
   final appLogic = Get.find<AppController>();
   final conversationLogic = Get.find<ConversationLogic>();
@@ -100,6 +101,8 @@ class ChatLogic extends GetxController {
   final _audioPlayer = AudioPlayer();
   final _currentPlayClientMsgID = "".obs;
   final isShowPopMenu = false.obs;
+  final _pendingGroupReadClientMsgIDs = <String>{};
+  Timer? _groupReadReceiptTimer;
 
   // final _showMenuCacheMessageList = <Message>[];
   final scrollingCacheMessageList = <Message>[];
@@ -150,6 +153,11 @@ class ChatLogic extends GetxController {
   bool get isSingleChat => null != userID && userID!.trim().isNotEmpty;
 
   bool get isGroupChat => null != groupID && groupID!.trim().isNotEmpty;
+
+  bool get isLargeGroupReadReceiptDisabled =>
+      isGroupChat &&
+      ((groupInfo?.memberCount ?? memberCount.value) >=
+          _largeGroupReadReceiptMemberLimit);
 
   bool get canManagePinnedMessage =>
       isGroupChat &&
@@ -313,6 +321,7 @@ class ChatLogic extends GetxController {
     };
     // 消息已读回执监听
     imLogic.onRecvGroupReadReceipt = (GroupMessageReceipt receipt) {
+      if (isLargeGroupReadReceiptDisabled) return;
       if (receipt.conversationID == conversationInfo.conversationID) {
         for (var element in receipt.groupMessageReadInfo) {
           // enum all message
@@ -1090,9 +1099,8 @@ class ChatLogic extends GetxController {
       Logger.print('mark as read：${message.clientMsgID!} ${message.isRead}');
       // 多端同步问题
       try {
-        if (isGroupChat) {
-          await OpenIM.iMManager.messageManager.sendGroupMessageReadReceipt(
-              conversationInfo.conversationID, [message.clientMsgID!]);
+        if (isGroupChat && !isLargeGroupReadReceiptDisabled) {
+          _queueGroupMessageReadReceipt(message.clientMsgID!);
         } else {
           await OpenIM.iMManager.conversationManager
               .markConversationMessageAsRead(
@@ -1104,6 +1112,30 @@ class ChatLogic extends GetxController {
       messageList.refresh();
       // message.attachedInfoElem!.hasReadTime = _timestamp;
     }
+  }
+
+  void _queueGroupMessageReadReceipt(String clientMsgID) {
+    if (isLargeGroupReadReceiptDisabled) return;
+    _pendingGroupReadClientMsgIDs.add(clientMsgID);
+    _groupReadReceiptTimer ??=
+        Timer(const Duration(milliseconds: 200), _flushGroupMessageReadReceipt);
+  }
+
+  void _flushGroupMessageReadReceipt() async {
+    _groupReadReceiptTimer = null;
+    if (isLargeGroupReadReceiptDisabled) {
+      _pendingGroupReadClientMsgIDs.clear();
+      return;
+    }
+    if (_pendingGroupReadClientMsgIDs.isEmpty) return;
+    final clientMsgIDs = _pendingGroupReadClientMsgIDs.toList();
+    _pendingGroupReadClientMsgIDs.clear();
+    try {
+      await OpenIM.iMManager.messageManager.sendGroupMessageReadReceipt(
+        conversationInfo.conversationID,
+        clientMsgIDs,
+      );
+    } catch (_) {}
   }
 
   _clearUnreadCount() {
@@ -1564,6 +1596,8 @@ class ChatLogic extends GetxController {
   @override
   void onClose() {
     _clearUnreadCount();
+    _groupReadReceiptTimer?.cancel();
+    _flushGroupMessageReadReceipt();
     // ChatGetTags.caches.removeLast();
     _unSubscribeUserOnlineStatus();
     inputCtrl.dispose();
@@ -1690,6 +1724,9 @@ class ChatLogic extends GetxController {
   /// 语音视频通话信息不显示读状态
   bool enabledReadStatus(Message message) {
     if (message.isNotificationType || message.isCallType) {
+      return false;
+    }
+    if (message.isGroupChat && isLargeGroupReadReceiptDisabled) {
       return false;
     }
     return true;
@@ -1850,9 +1887,13 @@ class ChatLogic extends GetxController {
 
   /// 群消息已读预览
   void viewGroupMessageReadStatus(Message message) {
+    if (isLargeGroupReadReceiptDisabled) return;
     AppNavigator.startGroupReadList(
       conversationInfo.conversationID,
       message.clientMsgID!,
+      unreadCount: message.attachedInfoElem?.groupHasReadInfo?.unreadCount ?? 0,
+      hasReadCount:
+          message.attachedInfoElem?.groupHasReadInfo?.hasReadCount ?? 0,
     );
   }
 
@@ -2409,8 +2450,7 @@ class ChatLogic extends GetxController {
     if (isRedPacket(message)) return false;
     if (message.status != MessageStatus.succeeded ||
         message.isNotificationType ||
-        message.isCallType ||
-        isExceed24H(message) && isSingleChat) {
+        message.isCallType) {
       return false;
     }
     if (isGroupChat) {
@@ -2428,8 +2468,11 @@ class ChatLogic extends GetxController {
       }
     }
     if (message.sendID == OpenIM.iMManager.userID) {
+      final revokeDuration = Duration(
+        minutes: appLogic.revokeMessageDurationMinutes,
+      );
       if (DateTime.now().millisecondsSinceEpoch - (message.sendTime ??= 0) <
-          (1000 * 60 * 5)) {
+          revokeDuration.inMilliseconds) {
         return true;
       }
     }

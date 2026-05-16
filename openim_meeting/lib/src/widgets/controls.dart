@@ -165,7 +165,7 @@ class _ControlsViewState extends State<ControlsView> {
             final androidConfig = FlutterBackgroundAndroidConfig(
               notificationTitle: StrRes.screenShare,
               notificationText: StrRes.screenShareHint,
-              notificationImportance: AndroidNotificationImportance.Default,
+              // notificationImportance: AndroidNotificationImportance.Default,
               notificationIcon: const AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
             );
             hasPermissions = await FlutterBackground.initialize(androidConfig: androidConfig);

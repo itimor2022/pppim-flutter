@@ -14,6 +14,8 @@ class GroupReadListLogic extends GetxController {
   String groupID = '';
   List<String> hasReadIDList = [];
   int needReadCount = 0;
+  int initialUnreadCount = 0;
+  int initialHasReadCount = 0;
   final hasReadMemberList = <GroupMembersInfo>[].obs;
   final unreadMemberList = <GroupMembersInfo>[].obs;
   final hasReadRefreshController = RefreshController();
@@ -25,14 +27,22 @@ class GroupReadListLogic extends GetxController {
   void onInit() {
     conversationID = Get.arguments['conversationID'];
     clientMsgID = Get.arguments['clientMsgID'];
-    queryHasReadMembersList();
+    initialUnreadCount = Get.arguments['unreadCount'] ?? 0;
+    initialHasReadCount = Get.arguments['hasReadCount'] ?? 0;
     queryUnreadMemberList();
-    recvGroupReadReceiptSubject = imLogic.recvGroupReadReceiptSubject.listen((GroupMessageReceipt receipt) {
+    recvGroupReadReceiptSubject = imLogic.recvGroupReadReceiptSubject
+        .listen((GroupMessageReceipt receipt) {
       if (receipt.conversationID == conversationID) {
-        final msg = receipt.groupMessageReadInfo.firstWhereOrNull((element) => element.clientMsgID == clientMsgID);
+        final msg = receipt.groupMessageReadInfo
+            .firstWhereOrNull((element) => element.clientMsgID == clientMsgID);
         if (msg != null) {
-          queryHasReadMembersList();
-          queryUnreadMemberList();
+          initialUnreadCount = msg.unreadCount;
+          initialHasReadCount = msg.hasReadCount;
+          if (index.value == 0) {
+            queryUnreadMemberList();
+          } else {
+            queryHasReadMembersList();
+          }
         }
       }
     });
@@ -49,7 +59,8 @@ class GroupReadListLogic extends GetxController {
   void queryHasReadMembersList() async {
     hasReadMemberList.clear();
     final list = await OpenIM.iMManager.messageManager
-        .getGroupMessageReaderList(conversationID, clientMsgID, count: _pageSize);
+        .getGroupMessageReaderList(conversationID, clientMsgID,
+            count: _pageSize);
     hasReadMemberList.assignAll(list);
     if (list.length < _pageSize) {
       hasReadRefreshController.loadNoData();
@@ -59,9 +70,9 @@ class GroupReadListLogic extends GetxController {
   }
 
   void loadMoreHasRead() async {
-    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(
-        conversationID, clientMsgID,
-        count: _pageSize, offset: hasReadMemberList.length);
+    final list = await OpenIM.iMManager.messageManager
+        .getGroupMessageReaderList(conversationID, clientMsgID,
+            count: _pageSize, offset: hasReadMemberList.length);
     hasReadMemberList.addAll(list);
     if (list.length < _pageSize) {
       hasReadRefreshController.loadNoData();
@@ -72,9 +83,9 @@ class GroupReadListLogic extends GetxController {
 
   void queryUnreadMemberList() async {
     unreadMemberList.clear();
-    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(
-        conversationID, clientMsgID,
-        filter: 1, count: _pageSize);
+    final list = await OpenIM.iMManager.messageManager
+        .getGroupMessageReaderList(conversationID, clientMsgID,
+            filter: 1, count: _pageSize);
     unreadMemberList.assignAll(list);
     if (list.length < _pageSize) {
       unreadRefreshController.loadNoData();
@@ -84,9 +95,9 @@ class GroupReadListLogic extends GetxController {
   }
 
   void loadMoreUnread() async {
-    final list = await OpenIM.iMManager.messageManager.getGroupMessageReaderList(
-        conversationID, clientMsgID,
-        filter: 1, count: _pageSize, offset: unreadMemberList.length);
+    final list = await OpenIM.iMManager.messageManager
+        .getGroupMessageReaderList(conversationID, clientMsgID,
+            filter: 1, count: _pageSize, offset: unreadMemberList.length);
     unreadMemberList.addAll(list);
     if (list.length < _pageSize) {
       unreadRefreshController.loadNoData();
@@ -97,14 +108,18 @@ class GroupReadListLogic extends GetxController {
 
   void switchTab(i) {
     if (i == 0) {
-      queryHasReadMembersList();
-    } else {
       queryUnreadMemberList();
+    } else {
+      queryHasReadMembersList();
     }
     index.value = i;
   }
 
-  int get unreadCount => unreadMemberList.length;
+  int get unreadCount => initialUnreadCount > unreadMemberList.length
+      ? initialUnreadCount
+      : unreadMemberList.length;
 
-  int get hasReadCount => hasReadMemberList.length;
+  int get hasReadCount => initialHasReadCount > hasReadMemberList.length
+      ? initialHasReadCount
+      : hasReadMemberList.length;
 }

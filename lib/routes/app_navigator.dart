@@ -298,10 +298,17 @@ class AppNavigator {
 
   static startGroupList() => Get.toNamed(AppRoutes.groupList);
 
-  static startGroupReadList(String conversationID, String clientMsgID) =>
+  static startGroupReadList(
+    String conversationID,
+    String clientMsgID, {
+    int unreadCount = 0,
+    int hasReadCount = 0,
+  }) =>
       Get.toNamed(AppRoutes.groupReadList, arguments: {
         "conversationID": conversationID,
-        "clientMsgID": clientMsgID
+        "clientMsgID": clientMsgID,
+        "unreadCount": unreadCount,
+        "hasReadCount": hasReadCount,
       });
 
   static startSearchFriend() => Get.toNamed(AppRoutes.searchFriend);
