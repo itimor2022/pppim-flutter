@@ -12,7 +12,7 @@ import 'package:path_provider/path_provider.dart';
 
 class Config {
   /// ⭐ 默认兜底域名
-  static const String _defaultHost = "www.cliao.one";
+  static const String _defaultHost = "av.xy204.cc";
 
   /// ⭐ 远程线路配置
   static const String _configUrl =
@@ -218,15 +218,21 @@ class Config {
   static Future<_HostResult> _testHost(String url) async {
     final stopwatch = Stopwatch()..start();
     try {
+      final baseUrl =
+          url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+      final testUrl = "$baseUrl/chat/account/login";
+
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 5);
-      final request = await client.getUrl(Uri.parse(url));
-      request.followRedirects = true;
+      final request = await client.postUrl(Uri.parse(testUrl));
+      request.headers.set('Content-Type', 'application/json');
+      request.write('{}');
       final response = await request.close();
+      await response.drain(); // ⭐️ 加这行，释放连接资源
       stopwatch.stop();
-      final ok = response.statusCode == 200;
+      final ok = response.statusCode < 500;
       Logger.print(
-          "检测: $url -> ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms)");
+          "检测: $testUrl -> ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms)");
       return _HostResult(
         host: Uri.parse(url).host,
         success: ok,
@@ -234,6 +240,7 @@ class Config {
       );
     } catch (_) {
       stopwatch.stop();
+      Logger.print("检测失败: $url");
       return _HostResult(
         host: Uri.parse(url).host,
         success: false,
@@ -248,6 +255,7 @@ class Config {
   static const _ipRegex =
       '((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)';
   static bool get _isIP => RegExp(_ipRegex).hasMatch(_host);
+  static bool get isDynamicHostReady => _host != _defaultHost;
 
   static String get serverIp => _host;
   static String get appAuthUrl =>
