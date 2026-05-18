@@ -90,14 +90,17 @@ class AppNavigator {
         arguments: {"searchType": searchType},
       );
 
-  static startUserProfilePane({
+  static Future<dynamic> startUserProfilePane({
     required String userID,
     String? groupID,
     String? nickname,
     String? faceURL,
     bool offAllWhenDelFriend = false,
     bool offAndToNamed = false,
-  }) {
+  }) async {
+    if (!await _canOpenGroupMemberProfile(userID: userID, groupID: groupID)) {
+      return null;
+    }
     GetTags.createUserProfileTag();
 
     final arguments = {
@@ -117,11 +120,60 @@ class AppNavigator {
           );
   }
 
+  static Future<bool> _canOpenGroupMemberProfile({
+    required String userID,
+    String? groupID,
+  }) async {
+    if (groupID?.isNotEmpty != true || userID == OpenIM.iMManager.userID) {
+      return true;
+    }
+    try {
+      final groups = await OpenIM.iMManager.groupManager.getGroupsInfo(
+        groupIDList: [groupID!],
+      );
+      final groupInfo = groups.isNotEmpty ? groups.first : null;
+      if (groupInfo?.lookMemberInfo != 1) {
+        return true;
+      }
+
+      final members = await OpenIM.iMManager.groupManager.getGroupMembersInfo(
+        groupID: groupID,
+        userIDList: [OpenIM.iMManager.userID, userID],
+      );
+      GroupMembersInfo? myMemberInfo;
+      for (final member in members) {
+        if (member.userID == OpenIM.iMManager.userID) {
+          myMemberInfo = member;
+          break;
+        }
+      }
+      if (myMemberInfo?.roleLevel == GroupRoleLevel.owner ||
+          myMemberInfo?.roleLevel == GroupRoleLevel.admin) {
+        return true;
+      }
+
+      final users = await OpenIM.iMManager.userManager.getUsersInfoWithCache(
+        [userID],
+      );
+      final user = users.isNotEmpty ? users.first : null;
+      if (user?.friendInfo != null) {
+        return true;
+      }
+
+      IMViews.showToast(StrRes.notAllowSeeMemberProfile);
+      return false;
+    } catch (_) {
+      return true;
+    }
+  }
+
   static startPersonalInfo({
     required String userID,
+    String? groupID,
   }) =>
       Get.toNamed(AppRoutes.personalInfo, arguments: {
         'userID': userID,
+        'groupID': groupID,
       });
 
   static startFriendSetup({
@@ -137,12 +189,14 @@ class AppNavigator {
   static startSendVerificationApplication({
     String? userID,
     String? groupID,
+    String? sourceGroupID,
     JoinGroupMethod? joinGroupMethod,
   }) =>
       Get.toNamed(AppRoutes.sendVerificationApplication, arguments: {
         'joinGroupMethod': joinGroupMethod,
         'userID': userID,
         'groupID': groupID,
+        'sourceGroupID': sourceGroupID,
       });
 
   static startGroupProfilePanel({

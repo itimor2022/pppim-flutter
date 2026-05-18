@@ -337,6 +337,8 @@ const Map<String, String> en_US = {
   'needVerification': 'Verification Required',
   'addMember': 'Add',
   'delMember': 'Remove',
+  'allowOrdinaryMemberInvite': 'Allow Members to Invite',
+  'ordinaryMemberInviteNotAllowed': 'Members are not allowed to invite users',
   'groupOwner': 'Group Owner',
   'groupAdmin': 'Group Admin',
   'notAllowSeeMemberProfile': "Disallow View Members' Profiles",

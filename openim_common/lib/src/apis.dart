@@ -202,12 +202,16 @@ class Apis {
     int pageNumber = 0,
     int showNumber = 10,
     required List<String> userIDList,
+    String? groupID,
+    bool checkGroupMemberProfile = false,
   }) async {
     final data = await HttpUtil.post(
       Urls.getUsersFullInfo,
       data: {
         'pagination': {'pageNumber': pageNumber, 'showNumber': showNumber},
         'userIDs': userIDList,
+        if (groupID?.isNotEmpty == true) 'groupID': groupID,
+        if (checkGroupMemberProfile) 'checkGroupMemberProfile': true,
         'platform': IMUtils.getPlatform(),
         // 'operationID': operationID,
       },

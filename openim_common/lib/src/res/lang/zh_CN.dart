@@ -328,6 +328,8 @@ const Map<String, String> zh_CN = {
   'needVerification': '需要发送验证信息',
   'addMember': '添加',
   'delMember': '移除',
+  'allowOrdinaryMemberInvite': '允许普通群员邀请进群',
+  'ordinaryMemberInviteNotAllowed': '当前群不允许普通群员邀请进群',
   'groupOwner': '群主',
   'groupAdmin': '管理员',
   'notAllowSeeMemberProfile': '不允许查看其他群成员资料',

@@ -10,11 +10,13 @@ class PersonalInfoLogic extends GetxController {
   final userProfilesLogic =
       Get.find<UserProfilePanelLogic>(tag: GetTags.userProfile);
   late String userID;
+  String? groupID;
   final userFullInfo = UserFullInfo().obs;
 
   @override
   void onInit() {
     userID = Get.arguments['userID'];
+    groupID = Get.arguments['groupID'];
     super.onInit();
   }
 
@@ -25,9 +27,20 @@ class PersonalInfoLogic extends GetxController {
   }
 
   void _queryUserFullInfo() async {
-    final list = await LoadingView.singleton.wrap(
-      asyncFunction: () => Apis.getUserFullInfo(userIDList: [userID]),
-    );
+    List<UserFullInfo>? list;
+    try {
+      list = await LoadingView.singleton.wrap(
+        asyncFunction: () => Apis.getUserFullInfo(
+          userIDList: [userID],
+          groupID: groupID,
+          checkGroupMemberProfile: groupID?.isNotEmpty == true,
+        ),
+      );
+    } catch (_) {
+      IMViews.showToast(StrRes.notAllowSeeMemberProfile);
+      Get.back();
+      return;
+    }
     final info = list?.firstOrNull;
     if (null != info) {
       userFullInfo.update((val) {

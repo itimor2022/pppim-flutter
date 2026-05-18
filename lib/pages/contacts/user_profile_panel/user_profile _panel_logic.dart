@@ -114,27 +114,35 @@ class UserProfilePanelLogic extends GetxController {
     final list = await OpenIM.iMManager.userManager.getUsersInfoWithCache(
       [userID],
     );
-    final list2 = await Apis.getUserFullInfo(userIDList: [userID]);
+    List<UserFullInfo>? list2;
+    try {
+      list2 = await Apis.getUserFullInfo(
+        userIDList: [userID],
+        groupID: isGroupMemberPage ? groupID : null,
+      );
+    } catch (_) {
+      list2 = null;
+    }
     final user = list.firstOrNull;
     final fullInfo = list2?.firstOrNull;
 
     final isFriendship = user?.friendInfo != null;
     final isBlack = user?.blackInfo != null;
 
-    if (null != user && null != fullInfo) {
+    if (null != user) {
       userInfo.update((val) {
         val?.nickname = user.nickname;
         val?.faceURL = user.faceURL;
         val?.remark = user.friendInfo?.remark;
-        val?.ex = user.friendInfo?.ex ?? user.publicInfo?.ex ?? fullInfo.ex;
+        val?.ex = user.friendInfo?.ex ?? user.publicInfo?.ex ?? fullInfo?.ex;
         val?.isBlacklist = isBlack;
         val?.isFriendship = isFriendship;
-        val?.allowAddFriend = fullInfo.allowAddFriend;
+        val?.allowAddFriend = fullInfo?.allowAddFriend ?? 1;
       });
     }
   }
 
-  _queryGroupInfo() async {
+  Future<void> _queryGroupInfo() async {
     if (isGroupMemberPage) {
       var list = await OpenIM.iMManager.groupManager.getGroupsInfo(
         groupIDList: [groupID!],
@@ -313,13 +321,39 @@ class UserProfilePanelLogic extends GetxController {
     IMUtils.copy(text: userInfo.value.userID!);
   }
 
-  void addFriend() => AppNavigator.startSendVerificationApplication(
-        userID: userInfo.value.userID!,
-      );
+  void addFriend() async {
+    if (isGroupMemberPage && groupInfo == null) {
+      await _queryGroupInfo();
+    }
+    if (isGroupMemberPage &&
+        !isFriendship &&
+        !isMyself &&
+        notAllowAddGroupMemberFriend.value) {
+      IMViews.showToast(StrRes.notAllAddMemberToBeFriend);
+      return;
+    }
+    AppNavigator.startSendVerificationApplication(
+      userID: userInfo.value.userID!,
+      sourceGroupID: isGroupMemberPage ? groupID : null,
+    );
+  }
 
-  void viewPersonalInfo() => AppNavigator.startPersonalInfo(
-        userID: userInfo.value.userID!,
-      );
+  void viewPersonalInfo() async {
+    if (isGroupMemberPage && groupInfo == null) {
+      await _queryGroupInfo();
+    }
+    if (isGroupMemberPage &&
+        !isFriendship &&
+        !isMyself &&
+        notAllowLookGroupMemberProfiles.value) {
+      IMViews.showToast(StrRes.notAllowSeeMemberProfile);
+      return;
+    }
+    AppNavigator.startPersonalInfo(
+      userID: userInfo.value.userID!,
+      groupID: isGroupMemberPage ? groupID : null,
+    );
+  }
 
   void friendSetup() => AppNavigator.startFriendSetup(
         userID: userInfo.value.userID!,

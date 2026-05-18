@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
 import 'package:openim/pages/chat/group_setup/edit_name/edit_name_logic.dart';
+import 'package:openim/utils/group_invite_permission_util.dart';
 import 'package:openim/utils/group_member_count_util.dart';
 import 'package:openim_common/openim_common.dart';
 import 'package:sprintf/sprintf.dart';
@@ -163,6 +164,11 @@ class GroupSetupLogic extends GetxController {
       myGroupMembersInfo.value.roleLevel == GroupRoleLevel.admin;
 
   bool get isOwner => groupInfo.value.ownerUserID == OpenIM.iMManager.userID;
+
+  bool get allowOrdinaryMemberInvite =>
+      GroupInvitePermissionUtil.allowOrdinaryMemberInvite(groupInfo.value);
+
+  bool get canInviteMember => isOwnerOrAdmin || allowOrdinaryMemberInvite;
 
   bool get isPinned => conversationInfo.value.isPinned == true;
 
@@ -379,7 +385,7 @@ class GroupSetupLogic extends GetxController {
   }
 
   int length() {
-    int buttons = isOwnerOrAdmin ? 2 : 1;
+    int buttons = (canInviteMember ? 1 : 0) + (isOwnerOrAdmin ? 1 : 0);
     return (visibleMemberList.length + buttons) > 10
         ? 10
         : (visibleMemberList.length + buttons);
@@ -392,26 +398,32 @@ class GroupSetupLogic extends GetxController {
     required Widget Function() delButton,
   }) {
     final list = visibleMemberList;
-    var length = isOwnerOrAdmin ? 8 : 9;
-    if (list.length > length) {
-      if (index < length) {
+    final showAddButton = canInviteMember;
+    final showDelButton = isOwnerOrAdmin;
+    final buttonCount = (showAddButton ? 1 : 0) + (showDelButton ? 1 : 0);
+    final memberLength = 10 - buttonCount;
+    if (list.length > memberLength) {
+      if (index < memberLength) {
         var info = list.elementAt(index);
         return builder(info);
-      } else if (index == length) {
+      } else if (showAddButton && index == memberLength) {
         return addButton();
-      } else {
+      } else if (showDelButton &&
+          index == memberLength + (showAddButton ? 1 : 0)) {
         return delButton();
       }
     } else {
       if (index < list.length) {
         var info = list.elementAt(index);
         return builder(info);
-      } else if (index == list.length) {
+      } else if (showAddButton && index == list.length) {
         return addButton();
-      } else {
+      } else if (showDelButton &&
+          index == list.length + (showAddButton ? 1 : 0)) {
         return delButton();
       }
     }
+    return const SizedBox();
   }
 
   void toggleTopChat() async {
@@ -448,6 +460,10 @@ class GroupSetupLogic extends GetxController {
   }
 
   void addMember() async {
+    if (!canInviteMember) {
+      IMViews.showToast(StrRes.ordinaryMemberInviteNotAllowed);
+      return;
+    }
     final result = await AppNavigator.startSelectContacts(
       action: SelAction.addMember,
       groupID: groupInfo.value.groupID,

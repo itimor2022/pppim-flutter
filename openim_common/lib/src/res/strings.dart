@@ -679,6 +679,11 @@ class StrRes {
 
   static String get delMember => 'delMember'.tr;
 
+  static String get allowOrdinaryMemberInvite => 'allowOrdinaryMemberInvite'.tr;
+
+  static String get ordinaryMemberInviteNotAllowed =>
+      'ordinaryMemberInviteNotAllowed'.tr;
+
   static String get groupOwner => 'groupOwner'.tr;
 
   static String get groupAdmin => 'groupAdmin'.tr;

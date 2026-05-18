@@ -44,6 +44,12 @@ class GroupManagePage extends StatelessWidget {
                 showSwitchButton: true,
               ),
               _buildItemView(
+                text: StrRes.allowOrdinaryMemberInvite,
+                switchOn: logic.allowOrdinaryMemberInvite,
+                onChanged: (_) => logic.toggleOrdinaryMemberInvite(),
+                showSwitchButton: true,
+              ),
+              _buildItemView(
                 text: StrRes.joinGroupSet,
                 value: logic.joinGroupOption,
                 onTap: logic.modifyJoinGroupSet,

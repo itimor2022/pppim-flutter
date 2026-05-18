@@ -1,6 +1,7 @@
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
 import 'package:openim/pages/chat/group_setup/group_setup_logic.dart';
+import 'package:openim/utils/group_invite_permission_util.dart';
 import 'package:openim_common/openim_common.dart';
 
 import '../../../../routes/app_navigator.dart';
@@ -47,19 +48,23 @@ class GroupManageLogic extends GetxController {
   }
 
   void viewGroupBills() {
-    Get.to(() => openim_group_bills.GroupBillsPage(groupID: groupInfo.value.groupID));
+    Get.to(() =>
+        openim_group_bills.GroupBillsPage(groupID: groupInfo.value.groupID));
   }
 
   void configSweepMine() {
-    Get.to(() => openim_mine_config.MineConfigPage(groupID: groupInfo.value.groupID));
+    Get.to(() =>
+        openim_mine_config.MineConfigPage(groupID: groupInfo.value.groupID));
   }
 
   void configGroupMineSetting() {
-    Get.to(() => openim_group_mine_setting.GroupMineSettingPage(groupID: groupInfo.value.groupID));
+    Get.to(() => openim_group_mine_setting.GroupMineSettingPage(
+        groupID: groupInfo.value.groupID));
   }
 
   void configRobot() {
-    Get.to(() => openim_robot_config.RobotConfigPage(groupID: groupInfo.value.groupID));
+    Get.to(() =>
+        openim_robot_config.RobotConfigPage(groupID: groupInfo.value.groupID));
   }
 
   void configSpecialReward() {
@@ -69,6 +74,9 @@ class GroupManageLogic extends GetxController {
   bool get allowLookProfiles => groupInfo.value.lookMemberInfo == 1;
 
   bool get allowAddFriend => groupInfo.value.applyMemberFriend == 1;
+
+  bool get allowOrdinaryMemberInvite =>
+      GroupInvitePermissionUtil.allowOrdinaryMemberInvite(groupInfo.value);
 
   void toggleGroupMute() {
     LoadingView.singleton.wrap(asyncFunction: () async {
@@ -98,6 +106,23 @@ class GroupManageLogic extends GetxController {
         status: !allowAddFriend ? 1 : 0,
       ),
     );
+  }
+
+  void toggleOrdinaryMemberInvite() async {
+    final nextValue = !allowOrdinaryMemberInvite;
+    final nextEx =
+        GroupInvitePermissionUtil.buildGroupEx(groupInfo.value, nextValue);
+    await LoadingView.singleton.wrap(
+      asyncFunction: () => OpenIM.iMManager.groupManager.setGroupInfo(
+        GroupInfo(
+          groupID: groupInfo.value.groupID,
+          ex: nextEx,
+        ),
+      ),
+    );
+    groupInfo.update((val) {
+      val?.ex = nextEx;
+    });
   }
 
   void modifyJoinGroupSet() async {

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
@@ -10,6 +12,7 @@ class SendVerificationApplicationLogic extends GetxController {
   final inputCtrl = TextEditingController();
   String? userID;
   String? groupID;
+  String? sourceGroupID;
   JoinGroupMethod? joinGroupMethod;
 
   bool get isEnterGroup => groupID != null;
@@ -20,6 +23,7 @@ class SendVerificationApplicationLogic extends GetxController {
   void onInit() {
     userID = Get.arguments['userID'];
     groupID = Get.arguments['groupID'];
+    sourceGroupID = Get.arguments['sourceGroupID'];
     joinGroupMethod = Get.arguments['joinGroupMethod'];
     super.onInit();
   }
@@ -38,6 +42,9 @@ class SendVerificationApplicationLogic extends GetxController {
         asyncFunction: () => OpenIM.iMManager.friendshipManager.addFriend(
           userID: userID!,
           reason: inputCtrl.text.trim(),
+          ex: sourceGroupID?.isNotEmpty == true
+              ? jsonEncode({'sourceGroupID': sourceGroupID})
+              : null,
         ),
       );
       Get.back();
