@@ -12,7 +12,7 @@ import 'package:path_provider/path_provider.dart';
 
 class Config {
   /// ⭐ 默认兜底域名
-  static const String _defaultHost = "av.xy204.cc";
+  static const String _defaultHost = "tp.xliao.shop";
 
   /// ⭐ 远程线路配置
   static const String _configUrl =
@@ -220,7 +220,7 @@ class Config {
     try {
       final baseUrl =
           url.endsWith('/') ? url.substring(0, url.length - 1) : url;
-      final testUrl = "$baseUrl/chat/account/login";
+      final testUrl = "$baseUrl/admin/scripts/loading.js";
 
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 5);
@@ -230,7 +230,7 @@ class Config {
       final response = await request.close();
       await response.drain(); // ⭐️ 加这行，释放连接资源
       stopwatch.stop();
-      final ok = response.statusCode < 500;
+      final ok = response.statusCode == 200;
       Logger.print(
           "检测: $testUrl -> ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms)");
       return _HostResult(
