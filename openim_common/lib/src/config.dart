@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +15,7 @@ class Config {
   /// ⭐ 默认兜底域名
   static const String _defaultHost = "https://46.149.198.106:5427";
 
-  /// ⭐ 远程线路配置
+  /// ⭐ 远程线路配置（OSS）
   static const String _configUrl =
       "https://cq-1369911702.cos.ap-chongqing.myqcloud.com/im/ms.txt";
 
@@ -31,15 +32,83 @@ class Config {
 
   /// 国内 DoH 服务（优先级从高到低）
   static const List<String> _dohServers = [
-    "https://doh.pub/dns-query", // 腾讯 DNSPod
-    "https://1.12.12.12/dns-query",
-    "https://dns.alidns.com/dns-query", // 阿里 DNS
-    "https://223.5.5.5/dns-query",
-    "https://223.6.6.6/dns-query",
+    "https://doh.pub/dns-query", // 腾讯 DNSPod（域名）
+    "https://dns.alidns.com/dns-query", // 阿里 DNS（域名）
+    "https://1.12.12.12/dns-query", // 腾讯 IP
+    "https://223.5.5.5/dns-query", // 阿里 IP
+    "https://223.6.6.6/dns-query", // 阿里 IP
   ];
 
   /// 当前生效host
   static String _host = _defaultHost;
+  static final Set<void Function(String oldHost, String newHost)>
+      _hostChangedListeners = {};
+
+  static void addHostChangedListener(
+      void Function(String oldHost, String newHost) listener) {
+    _hostChangedListeners.add(listener);
+  }
+
+  static void removeHostChangedListener(
+      void Function(String oldHost, String newHost) listener) {
+    _hostChangedListeners.remove(listener);
+  }
+
+  static void setServerHost(String host, {bool persist = true}) {
+    _applyHost(host, persist: persist);
+  }
+
+  static void _applyHost(String host, {bool persist = false}) {
+    final nextHost = host.trim();
+    if (nextHost.isEmpty) return;
+    final oldHost = _host;
+    if (oldHost == nextHost) {
+      Logger.print("🔁 host 无变化: $nextHost");
+      // 仍然刷新一次 baseUrl，确保 HttpUtil 与当前 host 一致
+      HttpUtil.refreshBaseUrl();
+      return;
+    }
+    _host = nextHost;
+    Logger.print("🔄 host 切换: $oldHost -> $_host (persist=$persist)");
+    if (persist) {
+      DataSp.putServerConfig({"serverIP": _host});
+    }
+    HttpUtil.refreshBaseUrl();
+
+    if (_hostChangedListeners.isNotEmpty) {
+      for (final listener in _hostChangedListeners.toList()) {
+        try {
+          listener(oldHost, _host);
+        } catch (e) {
+          Logger.print("host变更监听异常: $e");
+        }
+      }
+    }
+  }
+
+  static bool get _hasScheme =>
+      _host.startsWith('http://') || _host.startsWith('https://');
+
+  static Uri? get _hostUri => _hasScheme ? Uri.tryParse(_host) : null;
+
+  static String _joinPath(String baseUrl, String path) {
+    final normalizedBase = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    return '$normalizedBase$normalizedPath';
+  }
+
+  static String _toWsScheme(String scheme) {
+    return scheme == 'https' ? 'wss' : 'ws';
+  }
+
+  /// ⭐ 统一的 HttpClient 工厂：忽略证书校验，避免 IP+HTTPS / 自签名导致握手失败
+  static HttpClient _newClient({int timeoutSec = 5}) {
+    return HttpClient()
+      ..connectionTimeout = Duration(seconds: timeoutSec)
+      ..badCertificateCallback = (cert, host, port) => true;
+  }
 
   // ================== 初始化 ==================
   static Future init(Function() runApp) async {
@@ -54,15 +123,18 @@ class Config {
 
       final cache = DataSp.getServerConfig();
       if (cache != null && cache['serverIP'] != null) {
-        _host = cache['serverIP'];
-        Logger.print("⚡ 使用缓存线路: $_host");
+        _applyHost(cache['serverIP']);
+        Logger.print("⚡ 初始化阶段读取缓存线路: $_host");
+      } else {
+        Logger.print("ℹ️ 无缓存线路，当前使用默认: $_host");
       }
 
-      unawaited(_initHost());
-    } catch (e) {
-      Logger.print("初始化异常: $e");
+      await _initHost();
+    } catch (e, st) {
+      Logger.print("初始化异常: $e\n$st");
     }
 
+    Logger.print("🚀 启动 App，最终 host=$_host");
     runApp();
 
     SystemChrome.setPreferredOrientations([
@@ -80,89 +152,176 @@ class Config {
     FlutterBugly.init(androidAppId: "", iOSAppId: "");
   }
 
-  // ================== 线路初始化 ==================
+  // ================== 线路初始化（核心调度）==================
+  //
+  // 优先级链：
+  // 1. 缓存线路（如可用，直接使用）
+  // 2. DNS TXT 解析到的所有域名 -> 测速选最快
+  // 3. OSS ms.txt 拉到的所有域名 -> 测速选最快
+  // 4. 默认域名 _defaultHost
+  //
+  // 任何一步只要测出至少一个可用域名（HTTP 200），立即应用并结束；
+  // 全部失败时回退到默认域名。
+  // ===========================================================
   static Future<void> _initHost() async {
-    try {
-      // ================== ① 本地缓存 ==================
-      final cached = DataSp.getServerConfig()?['serverIP'];
+    Logger.print("================ _initHost START ================");
 
-      if (cached != null && cached.toString().isNotEmpty) {
-        final ok = await _quickCheck(cached);
-        if (ok) {
-          _host = cached;
-          Logger.print("⚡ 使用缓存线路: $_host");
-          return;
-        }
-        Logger.print("⚠️ 缓存失效");
-      }
-
-      // ================== ② DNS ==================
-      List<String> hosts = await _fetchHostsFromDNS();
-      if (hosts.isNotEmpty) {
-        Logger.print("📡 DNS线路: ${hosts.length}");
+    // -------- 第一步：缓存线路优先 --------
+    final cached = DataSp.getServerConfig()?['serverIP']?.toString();
+    if (cached != null && cached.isNotEmpty) {
+      Logger.print("📦 发现缓存线路: $cached，开始校验...");
+      final ok = await _quickCheck(cached);
+      if (ok) {
+        _applyHost(cached);
+        Logger.print("✅ 缓存线路可用，直接使用: $_host");
+        Logger.print("================ _initHost END ==================");
+        return;
       } else {
-        // ================== ③ COS ==================
-        hosts = await _fetchHostList();
-        Logger.print("🌐 COS线路: ${hosts.length}");
+        Logger.print("⚠️ 缓存线路不可用，清理缓存");
+        await DataSp.putServerConfig({});
       }
-
-      if (hosts.isEmpty) throw Exception("无线路");
-
-      // ================== ④ 选最快 ==================
-      final best = await _findBestHost(hosts);
-
-      if (best != null) {
-        _host = best;
-        DataSp.putServerConfig({"serverIP": _host});
-        Logger.print("✅ 最优线路: $_host");
-      } else {
-        throw Exception("测速失败");
-      }
-    } catch (e) {
-      Logger.print("❌ 初始化失败: $e");
-      _host = _defaultHost;
+    } else {
+      Logger.print("ℹ️ 无缓存线路");
     }
+
+    // -------- 第二步：DNS TXT 线路 --------
+    Logger.print("---------------- 步骤2: DNS TXT ----------------");
+    List<String> dnsHosts = [];
+    try {
+      dnsHosts = await _fetchHostsFromDNS();
+    } catch (e) {
+      Logger.print("❌ DNS 解析异常: $e");
+    }
+    Logger.print("📡 DNS 解析结果: ${dnsHosts.length} 条 -> $dnsHosts");
+
+    if (dnsHosts.isNotEmpty) {
+      final best = await _findBestHost(dnsHosts, tag: "DNS");
+      if (best != null) {
+        _applyHost(best, persist: true);
+        Logger.print("✅ DNS 线路选中: $_host");
+        try {
+          IMViews.showToast("✅ 选中DNS线路");
+        } catch (_) {}
+        Logger.print("================ _initHost END ==================");
+        return;
+      } else {
+        Logger.print("⚠️ DNS 解析的全部域名都不通，进入 OSS 流程");
+      }
+    } else {
+      Logger.print("⚠️ DNS 未解析到任何域名，进入 OSS 流程");
+    }
+
+    // -------- 第三步：OSS 配置线路 --------
+    Logger.print("---------------- 步骤3: OSS 配置 ----------------");
+    List<String> ossHosts = [];
+    try {
+      ossHosts = await _fetchHostList();
+    } catch (e) {
+      Logger.print("❌ OSS 配置拉取异常: $e");
+    }
+    Logger.print("🌐 OSS 配置结果: ${ossHosts.length} 条 -> $ossHosts");
+
+    if (ossHosts.isNotEmpty) {
+      final best = await _findBestHost(ossHosts, tag: "OSS");
+      if (best != null) {
+        _applyHost(best, persist: true);
+        Logger.print("✅ OSS 线路选中: $_host");
+        try {
+          IMViews.showToast("✅ 选中OSS线路");
+        } catch (_) {}
+        Logger.print("================ _initHost END ==================");
+        return;
+      } else {
+        Logger.print("⚠️ OSS 解析的全部域名都不通，进入默认线路流程");
+      }
+    } else {
+      Logger.print("⚠️ OSS 未拉取到任何域名，进入默认线路流程");
+    }
+
+    // -------- 第四步：默认兜底 --------
+    Logger.print("---------------- 步骤4: 默认域名 ----------------");
+    final defaultOk = await _quickCheck(_defaultHost);
+    if (defaultOk) {
+      _applyHost(_defaultHost);
+      Logger.print("✅ 默认域名可用: $_defaultHost");
+    } else {
+      _applyHost(_defaultHost);
+      Logger.print("❌ 默认域名也不通，但仍然应用: $_defaultHost（避免空 host）");
+    }
+    Logger.print("================ _initHost END ==================");
   }
 
+  static Future<List<_HostResult>> _runLimited(
+    List<String> items,
+    int concurrency,
+    Future<_HostResult> Function(String url) fn,
+  ) async {
+    final queue = Queue<String>()..addAll(items);
+    final results = <_HostResult>[];
+
+    Future<void> worker() async {
+      while (queue.isNotEmpty) {
+        final item = queue.removeFirst();
+        results.add(await fn(item));
+      }
+    }
+
+    final workers = List.generate(
+      concurrency,
+      (_) => worker(),
+    );
+
+    await Future.wait(workers);
+    return results;
+  }
+
+  // ================== 快速健康检查 ==================
   static Future<bool> _quickCheck(String host) async {
+    final stopwatch = Stopwatch()..start();
     try {
-      final url = host.endsWith('/')
-          ? "${host}admin/scripts/loading.js"
-          : "$host/admin/scripts/loading.js";
+      final baseUrl = host.startsWith("http") ? host : "https://$host";
+      final url = baseUrl.endsWith('/')
+          ? "${baseUrl}admin/scripts/loading.js"
+          : "$baseUrl/admin/scripts/loading.js";
 
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 2);
-
-      final request = await client.openUrl('HEAD', Uri.parse(url));
+      final client = _newClient(timeoutSec: 3);
+      final request = await client.getUrl(Uri.parse(url));
       final response = await request.close();
       await response.drain();
+      client.close(force: true);
+      stopwatch.stop();
 
-      Logger.print("⚡ HEAD检测: $host -> ${response.statusCode}");
-
-      final code = response.statusCode;
-
-      return code == 200 || code == 204 || code == 301 || code == 302;
-    } catch (_) {
+      final ok = response.statusCode == 200;
+      Logger.print(
+          "⚡ quickCheck $url -> ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms) ${ok ? "✅" : "❌"}");
+      return ok;
+    } catch (e) {
+      stopwatch.stop();
+      Logger.print(
+          "⚡ quickCheck $host -> 异常 (${stopwatch.elapsedMilliseconds}ms): $e");
       return false;
     }
   }
 
-  // ================== 国内 DNS TXT 查询（核心修改）==================
+  // ================== 国内 DNS TXT 查询 ==================
   static Future<List<String>> _fetchHostsFromDNS() async {
     final Set<String> allHosts = {};
+    bool globalResolved = false;
 
     for (final domain in _dnsConfigDomains) {
+      if (globalResolved) break;
+
+      bool domainResolved = false;
+
       for (final dohUrl in _dohServers) {
         try {
-          final uri = Uri.parse(dohUrl).replace(
-            queryParameters: {
-              'name': domain,
-              'type': 'TXT',
-            },
-          );
+          final uri = Uri.parse(dohUrl).replace(queryParameters: {
+            'name': domain,
+            'type': 'TXT',
+            'ct': 'application/dns-json',
+          });
 
-          final client = HttpClient()
-            ..connectionTimeout = const Duration(seconds: 7);
+          final client = _newClient(timeoutSec: 7);
           final request = await client.getUrl(uri);
           request.headers.set('accept', 'application/dns-json');
 
@@ -170,111 +329,144 @@ class Config {
           if (response.statusCode != 200) continue;
 
           final body = await response.transform(utf8.decoder).join();
-          final data = json.decode(body);
+          client.close(force: true);
 
+          final data = json.decode(body) as Map<String, dynamic>;
           final answers = data['Answer'] as List? ?? [];
-          for (var ans in answers) {
-            if (ans['type'] != 16) continue; // 16 = TXT
 
-            String txtData = (ans['data'] as String? ?? '')
+          for (final ans in answers) {
+            if (ans['type'] != 16) continue;
+
+            String txt = (ans['data'] ?? '')
+                .toString()
                 .replaceAll('"', '')
                 .replaceAll('\\', '')
                 .trim();
 
-            if (txtData.isEmpty) continue;
+            if (txt.isEmpty) continue;
 
-            List<String> hosts = [];
+            List<String> hosts;
+
             try {
-              // Base64 解码
-              final decoded = utf8.decode(base64.decode(txtData));
-              hosts = decoded
-                  .split(',')
-                  .map((e) => e.trim())
-                  .where((e) => e.isNotEmpty && e.contains('.'))
-                  .toList();
+              final decoded = utf8.decode(base64.decode(txt));
+              hosts = decoded.split(',');
             } catch (_) {
-              // 明文
-              hosts = txtData
-                  .split(',')
-                  .map((e) => e.trim())
-                  .where((e) => e.isNotEmpty && e.contains('.'))
-                  .toList();
+              hosts = txt.split(',');
             }
+
+            hosts = hosts
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty && e.contains('.'))
+                .toList();
 
             if (hosts.isNotEmpty) {
               allHosts.addAll(hosts);
-              Logger.print("✅ 国内DNS成功: $domain (${Uri.parse(dohUrl).host})");
-              break; // 成功一个就跳出当前域名
+              domainResolved = true;
+              globalResolved = true; // ⭐ 核心：全局跳出
+
+              Logger.print("✅ DNS成功: $domain -> $hosts");
+              break;
             }
           }
-          if (allHosts.isNotEmpty) break; // 已获取到线路，跳出
-        } catch (e) {
-          // Logger.print("❌ $dohUrl 查询失败: $e"); // 可注释掉减少日志
-        }
+
+          if (domainResolved) break;
+        } catch (_) {}
       }
     }
+
+    Logger.print("📡 DNS最终线路: ${allHosts.length}");
     return allHosts.toList();
   }
 
-  // ================== 其他原有方法保持不变 ==================
+  // ================== OSS 配置拉取 ==================
   static Future<List<String>> _fetchHostList() async {
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 6);
-    final request = await client.getUrl(Uri.parse(_configUrl));
-    final response = await request.close();
-    if (response.statusCode != 200) throw Exception("配置文件获取失败");
+    final client = _newClient(timeoutSec: 6);
 
-    final content = await response.transform(utf8.decoder).join();
-    return content
-        .split('\n')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty && e.contains('.'))
-        .toList();
+    try {
+      final request = await client.getUrl(Uri.parse(_configUrl));
+      final response = await request.close();
+
+      if (response.statusCode != 200) return [];
+
+      final content = await response.transform(utf8.decoder).join();
+
+      final hosts = content
+          .split(RegExp(r'[\r\n,]+'))
+          .map((e) => e.trim())
+          .where((e) => e.startsWith("https://")) // ⭐ 强制 https
+          .toList();
+
+      Logger.print("🌐 OSS线路: ${hosts.length}");
+      return hosts;
+    } finally {
+      client.close(force: true);
+    }
   }
 
-  static Future<String?> _findBestHost(List<String> hosts) async {
-    final futures = <Future<_HostResult>>[];
-    for (var host in hosts) {
-      for (var url in _buildUrls(host)) {
-        futures.add(_testHost(url));
-      }
+  // ================== 测速选最快 ==================
+  static Future<String?> _findBestHost(List<String> hosts,
+      {String tag = ""}) async {
+    final expanded = <String>[];
+
+    for (final h in hosts) {
+      expanded.add(h); // ⭐ 已经是 https:// 不再拼接
     }
-    final results = await Future.wait(futures, eagerError: false);
+
+    Logger.print("🏁 [$tag] 候选: ${expanded.length}");
+
+    final results = await _runLimited(
+      expanded,
+      8, // ⭐ 并发限制核心（建议 5~8）
+      _testHost,
+    );
+
     final success = results.where((e) => e.success).toList();
-    if (success.isEmpty) return null;
+
+    if (success.isEmpty) {
+      Logger.print("❌ [$tag] 无可用线路");
+      return null;
+    }
+
     success.sort((a, b) => a.duration.compareTo(b.duration));
+
+    Logger.print("🏆 [$tag] 最优: ${success.first.host}");
     return success.first.host;
   }
 
   static List<String> _buildUrls(String host) {
-    // ⭐ 已经是完整URL，直接返回
-    return [host];
+    if (host.startsWith("http")) return [host];
+    return ["https://$host", "http://$host"];
   }
 
   static Future<_HostResult> _testHost(String url) async {
     final stopwatch = Stopwatch()..start();
+    HttpClient? client;
 
     try {
       final testUrl = url.endsWith('/')
           ? "${url}admin/scripts/loading.js"
           : "$url/admin/scripts/loading.js";
 
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 4);
+      client = _newClient(timeoutSec: 5);
 
-      final request = await client.openUrl('HEAD', Uri.parse(testUrl));
-      final response = await request.close();
+      // ================= HEAD =================
+      var request = await client.openUrl('HEAD', Uri.parse(testUrl));
+      var response = await request.close();
+
+      // ================= fallback GET =================
+      if (response.statusCode >= 400) {
+        final getReq = await client.getUrl(Uri.parse(testUrl));
+        response = await getReq.close();
+      }
+
       await response.drain();
-
       stopwatch.stop();
 
       final code = response.statusCode;
       final ok = code == 200 || code == 204 || code == 301 || code == 302;
 
-      Logger.print(
-          "HEAD测速: $testUrl -> ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms)");
-
       return _HostResult(
-        host: url, // ⭐ 这里直接保存完整URL（重要）
+        host: url,
         success: ok,
         duration: stopwatch.elapsedMilliseconds,
       );
@@ -285,6 +477,8 @@ class Config {
         success: false,
         duration: 999999,
       );
+    } finally {
+      client?.close(force: true);
     }
   }
 
@@ -294,24 +488,25 @@ class Config {
   static const _ipRegex =
       '((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)';
   static bool get _isIP {
-    try {
-      final uri = Uri.parse(_host);
-      return RegExp(_ipRegex).hasMatch(uri.host);
-    } catch (_) {
-      return false;
-    }
+    final hostValue = _hostUri?.host ?? _host.split(':').first;
+    return RegExp(_ipRegex).hasMatch(hostValue);
   }
 
   static bool get isDynamicHostReady => _host != _defaultHost;
 
   static String get serverIp => _host;
+
   static String get imApiUrl => "$_host/api";
   static String get appAuthUrl => "$_host/chat";
   static String get imWsUrl {
     final uri = Uri.parse(_host);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    return "$scheme://${uri.host}${uri.hasPort ? ":${uri.port}" : ""}/msg_gateway";
+    final port = uri.hasPort ? ':${uri.port}' : '';
+
+    return "$scheme://${uri.host}$port/msg_gateway";
   }
+
+  static String get objectStorage => 'minio';
 
   static const uiW = 375.0;
   static const uiH = 812.0;
