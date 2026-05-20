@@ -83,21 +83,35 @@ class Config {
   // ================== 线路初始化 ==================
   static Future<void> _initHost() async {
     try {
+      // ================== ⭐ 第一步：优先验证缓存 ==================
+      final cached = DataSp.getServerConfig()?['serverIP'];
+
+      if (cached != null && cached.toString().isNotEmpty) {
+        final ok = await _quickCheck(cached);
+        if (ok) {
+          _host = cached;
+          Logger.print("⚡ 缓存线路可用，直接使用: $_host");
+          return; // ⭐ 直接结束，不再全量测速
+        } else {
+          Logger.print("⚠️ 缓存线路失效，开始重新获取");
+        }
+      }
+
+      // ================== 第二步：获取新线路 ==================
       List<String> hosts = [];
 
-      // 优先级1：国内 DNS TXT
       final dnsHosts = await _fetchHostsFromDNS();
       if (dnsHosts.isNotEmpty) {
         hosts = dnsHosts;
-        Logger.print("📡 国内 DNS TXT 获取到 ${hosts.length} 条线路");
+        Logger.print("📡 DNS 获取线路: ${hosts.length}");
       } else {
-        // 优先级2：远程配置文件
         hosts = await _fetchHostList();
-        Logger.print("🌐 使用远程 ms.txt 获取线路");
+        Logger.print("🌐 使用远程配置");
       }
 
-      if (hosts.isEmpty) throw Exception("线路列表为空");
+      if (hosts.isEmpty) throw Exception("线路为空");
 
+      // ================== 第三步：测速选最快 ==================
       final best = await _findBestHost(hosts);
       if (best != null) {
         _host = best;
@@ -107,8 +121,31 @@ class Config {
         throw Exception("无可用线路");
       }
     } catch (e) {
-      Logger.print("❌ 线路初始化失败: $e，使用默认域名");
+      Logger.print("❌ 初始化失败: $e，使用默认域名");
       _host = _defaultHost;
+    }
+  }
+
+  static Future<bool> _quickCheck(String host) async {
+    try {
+      final baseUrl = host.startsWith("http") ? host : "https://$host";
+
+      final url = baseUrl.endsWith('/')
+          ? "${baseUrl}admin/scripts/loading.js"
+          : "$baseUrl/admin/scripts/loading.js";
+
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 2);
+
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close();
+      await response.drain();
+
+      Logger.print("⚡ 快速检测: $host -> ${response.statusCode}");
+
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
     }
   }
 

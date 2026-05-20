@@ -122,10 +122,10 @@ class LoginLogic extends GetxController {
   }
 
   login() {
-    if (!Config.isDynamicHostReady) {
-      IMViews.showToast("线路初始化中，请稍后");
-      return;
-    }
+    // if (!Config.isDynamicHostReady) {
+    //   IMViews.showToast("线路初始化中，请稍后");
+    //   return;
+    // }
 
     DataSp.putLoginType(loginType.value.rawValue);
     LoadingView.singleton.wrap(asyncFunction: () async {
