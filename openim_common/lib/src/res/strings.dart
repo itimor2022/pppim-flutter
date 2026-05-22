@@ -537,6 +537,15 @@ class StrRes {
 
   static String get canNotAddFriends => 'canNotAddFriends'.tr;
 
+  static String get canNotAddYourselfAsFriend => 'canNotAddYourselfAsFriend'.tr;
+
+  static String get friendApplicationBlocked => 'friendApplicationBlocked'.tr;
+
+  static String get alreadyAFriendRelationship =>
+      'alreadyAFriendRelationship'.tr;
+
+  static String get noPermissionToAddFriend => 'noPermissionToAddFriend'.tr;
+
   static String get mutedAll => 'mutedAll'.tr;
 
   static String get tenMinutes => 'tenMinutes'.tr;

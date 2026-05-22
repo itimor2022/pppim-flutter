@@ -264,6 +264,11 @@ const Map<String, String> en_US = {
   "sendSuccessfully": "Sent Successfully",
   "sendFailed": "Send Failed",
   'canNotAddFriends': 'This user has set not to be added!',
+  'canNotAddYourselfAsFriend': 'You cannot add yourself as a friend',
+  'friendApplicationBlocked':
+      'You have been blocked and cannot send a friend request',
+  'alreadyAFriendRelationship': 'You are already friends',
+  'noPermissionToAddFriend': 'No permission to send this friend request',
   "mutedAll": "Mute All",
   "tenMinutes": "10 Minutes",
   "oneHour": "1 Hour",

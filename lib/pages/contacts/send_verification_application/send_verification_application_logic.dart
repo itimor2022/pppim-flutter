@@ -49,15 +49,32 @@ class SendVerificationApplicationLogic extends GetxController {
       );
       Get.back();
       IMViews.showToast(StrRes.sendSuccessfully);
-    } catch (_) {
-      if (_ is PlatformException) {
-        if (_.code == '${SDKErrorCode.refuseToAddFriends}') {
-          IMViews.showToast(StrRes.canNotAddFriends);
-          return;
-        }
-      }
-      IMViews.showToast(StrRes.sendFailed);
+    } catch (e) {
+      IMViews.showToast(_addFriendErrorText(e));
     }
+  }
+
+  String _addFriendErrorText(Object error) {
+    if (error is PlatformException) {
+      final code = int.tryParse(error.code);
+      switch (code) {
+        case SDKErrorCode.refuseToAddFriends:
+          return StrRes.canNotAddFriends;
+        case SDKErrorCode.notAddMyselfAsAFriend:
+          return StrRes.canNotAddYourselfAsFriend;
+        case SDKErrorCode.hasBeenBlocked:
+          return StrRes.friendApplicationBlocked;
+        case SDKErrorCode.alreadyAFriendRelationship:
+          return StrRes.alreadyAFriendRelationship;
+        case SDKErrorCode.insufficientPermissions:
+          if (sourceGroupID?.isNotEmpty == true ||
+              (error.message?.contains('group') ?? false)) {
+            return StrRes.notAllAddMemberToBeFriend;
+          }
+          return StrRes.noPermissionToAddFriend;
+      }
+    }
+    return StrRes.sendFailed;
   }
 
   /// By Invitation = 2 , Search = 3 , QRCode  = 4
