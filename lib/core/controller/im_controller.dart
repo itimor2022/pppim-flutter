@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -30,7 +31,7 @@ class IMController extends GetxController with IMCallback, OpenIMLive {
     WidgetsBinding.instance.addPostFrameCallback((_) => initOpenIM());
   }
 
-  void initOpenIM() async {
+  Future<bool> initOpenIM() async {
     final initialized = await OpenIM.iMManager.initSDK(
       platformID: IMUtils.getPlatform(),
       apiAddr: Config.imApiUrl,
@@ -148,6 +149,50 @@ class IMController extends GetxController with IMCallback, OpenIMLive {
       ));
 
     initializedSubject.sink.add(initialized);
+    return initialized;
+  }
+
+  /// 切线后执行 SDK 重连校验，确保 ws/api 立即切到新域名。
+  ///
+  /// 默认只等待 SDK 重新初始化完成；登录恢复会在后台异步执行，避免阻塞 UI。
+  Future<bool> reconnectAndVerifyForHostSwitch(
+      {bool waitForLogin = false}) async {
+    try {
+      try {
+        await OpenIM.iMManager.unInitSDK().timeout(const Duration(seconds: 3));
+      } catch (e) {
+        Logger.print('unInitSDK 忽略异常: $e');
+      }
+
+      final initialized = await initOpenIM().timeout(
+        const Duration(seconds: 6),
+      );
+      if (!initialized) {
+        Logger.print('切线后 SDK 初始化失败');
+        return false;
+      }
+
+      final cert = DataSp.getLoginCertificate();
+      final uid = cert?.userID;
+      final token = cert?.imToken;
+      if (uid != null && uid.isNotEmpty && token != null && token.isNotEmpty) {
+        if (waitForLogin) {
+          await login(uid, token).timeout(const Duration(seconds: 8));
+        } else {
+          unawaited(
+            login(uid, token).catchError((e, s) {
+              Logger.print('切线后后台登录失败: $e\n$s');
+            }),
+          );
+        }
+      }
+
+      Logger.print('切线后 SDK 重连校验通过');
+      return true;
+    } catch (e, s) {
+      Logger.print('切线后 SDK 重连校验失败: $e\n$s');
+      return false;
+    }
   }
 
   Future login(String userID, String token) async {

@@ -184,62 +184,12 @@ class Config {
       Logger.print("ℹ️ 无缓存线路");
     }
 
-    // -------- 第二步：DNS TXT 线路 --------
-    Logger.print("---------------- 步骤2: DNS TXT ----------------");
-    List<String> dnsHosts = [];
-    try {
-      dnsHosts = await _fetchHostsFromDNS();
-    } catch (e) {
-      Logger.print("❌ DNS 解析异常: $e");
-    }
-    Logger.print("📡 DNS 解析结果: ${dnsHosts.length} 条 -> $dnsHosts");
+    // -------- 手动模式：不在启动阶段自动切线 --------
+    Logger.print("---------------- 手动模式：跳过DNS/OSS自动切线 ----------------");
+    Logger.print("ℹ️ 可在登录页点击“切换线路”手动选择线路");
 
-    if (dnsHosts.isNotEmpty) {
-      final best = await _findBestHost(dnsHosts, tag: "DNS");
-      if (best != null) {
-        _applyHost(best, persist: true);
-        Logger.print("✅ DNS 线路选中: $_host");
-        try {
-          IMViews.showToast("✅ 选中DNS线路");
-        } catch (_) {}
-        Logger.print("================ _initHost END ==================");
-        return;
-      } else {
-        Logger.print("⚠️ DNS 解析的全部域名都不通，进入 OSS 流程");
-      }
-    } else {
-      Logger.print("⚠️ DNS 未解析到任何域名，进入 OSS 流程");
-    }
-
-    // -------- 第三步：OSS 配置线路 --------
-    Logger.print("---------------- 步骤3: OSS 配置 ----------------");
-    List<String> ossHosts = [];
-    try {
-      ossHosts = await _fetchHostList();
-    } catch (e) {
-      Logger.print("❌ OSS 配置拉取异常: $e");
-    }
-    Logger.print("🌐 OSS 配置结果: ${ossHosts.length} 条 -> $ossHosts");
-
-    if (ossHosts.isNotEmpty) {
-      final best = await _findBestHost(ossHosts, tag: "OSS");
-      if (best != null) {
-        _applyHost(best, persist: true);
-        Logger.print("✅ OSS 线路选中: $_host");
-        try {
-          IMViews.showToast("✅ 选中OSS线路");
-        } catch (_) {}
-        Logger.print("================ _initHost END ==================");
-        return;
-      } else {
-        Logger.print("⚠️ OSS 解析的全部域名都不通，进入默认线路流程");
-      }
-    } else {
-      Logger.print("⚠️ OSS 未拉取到任何域名，进入默认线路流程");
-    }
-
-    // -------- 第四步：默认兜底 --------
-    Logger.print("---------------- 步骤4: 默认域名 ----------------");
+    // -------- 默认兜底 --------
+    Logger.print("---------------- 步骤2: 默认域名 ----------------");
     final defaultOk = await _quickCheck(_defaultHost);
     if (defaultOk) {
       _applyHost(_defaultHost);
@@ -303,6 +253,33 @@ class Config {
     }
   }
 
+  static String _normalizeHttpsHost(String host) {
+    var value = host.trim();
+    if (value.isEmpty) return '';
+    if (!value.startsWith('https://')) return '';
+    if (value.endsWith('/')) {
+      value = value.substring(0, value.length - 1);
+    }
+    final uri = Uri.tryParse(value);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      return '';
+    }
+    return uri.replace(host: uri.host.toLowerCase()).toString();
+  }
+
+  static List<String> _dedupeHosts(Iterable<String> hosts) {
+    final normalizedSet = <String>{};
+    final result = <String>[];
+    for (final host in hosts) {
+      final normalized = _normalizeHttpsHost(host);
+      if (normalized.isEmpty) continue;
+      if (normalizedSet.add(normalized)) {
+        result.add(normalized);
+      }
+    }
+    return result;
+  }
+
   // ================== 国内 DNS TXT 查询 ==================
   static Future<List<String>> _fetchHostsFromDNS() async {
     final Set<String> allHosts = {};
@@ -356,8 +333,10 @@ class Config {
 
             hosts = hosts
                 .map((e) => e.trim())
-                .where((e) => e.isNotEmpty && e.contains('.'))
+                .where((e) => e.startsWith('https://'))
                 .toList();
+
+            hosts = _dedupeHosts(hosts);
 
             if (hosts.isNotEmpty) {
               allHosts.addAll(hosts);
@@ -374,8 +353,75 @@ class Config {
       }
     }
 
-    Logger.print("📡 DNS最终线路: ${allHosts.length}");
-    return allHosts.toList();
+    final deduped = _dedupeHosts(allHosts);
+    Logger.print("📡 DNS最终线路: ${deduped.length}");
+    return deduped;
+  }
+
+  /// 手动切换线路时使用：优先 DNS，DNS 无结果时才回退 OSS。
+  static Future<List<ConfigLineOption>> fetchManualLineOptions() async {
+    List<String> candidates = [];
+
+    try {
+      candidates = await _fetchHostsFromDNS();
+      if (candidates.isNotEmpty) {
+        Logger.print('手动线路来源: DNS (${candidates.length})');
+      }
+    } catch (e) {
+      Logger.print("手动线路 DNS 拉取异常: $e");
+    }
+
+    if (candidates.isEmpty) {
+      try {
+        candidates = await _fetchHostList();
+        if (candidates.isNotEmpty) {
+          Logger.print('手动线路来源: OSS (${candidates.length})');
+        }
+      } catch (e) {
+        Logger.print("手动线路 OSS 拉取异常: $e");
+      }
+    }
+
+    candidates = _dedupeHosts(candidates);
+
+    if (candidates.isEmpty) {
+      return [];
+    }
+
+    return candidates
+        .map(
+          (host) => ConfigLineOption(
+            host: host,
+            success: true,
+            duration: -1,
+          ),
+        )
+        .toList();
+  }
+
+  /// 后台测速：仅用于弹窗内更新延迟展示，不阻塞弹窗打开。
+  static Future<List<ConfigLineOption>> fetchManualLineLatencies(
+    List<String> hosts,
+  ) async {
+    final candidates = _dedupeHosts(hosts);
+
+    final results = await _runLimited(candidates, 8, _testHost);
+    results.sort((a, b) {
+      if (a.success != b.success) {
+        return a.success ? -1 : 1;
+      }
+      return a.duration.compareTo(b.duration);
+    });
+
+    return results
+        .map(
+          (e) => ConfigLineOption(
+            host: e.host,
+            success: e.success,
+            duration: e.success ? e.duration : -1,
+          ),
+        )
+        .toList();
   }
 
   // ================== OSS 配置拉取 ==================
@@ -396,8 +442,9 @@ class Config {
           .where((e) => e.startsWith("https://")) // ⭐ 强制 https
           .toList();
 
-      Logger.print("🌐 OSS线路: ${hosts.length}");
-      return hosts;
+      final deduped = _dedupeHosts(hosts);
+      Logger.print("🌐 OSS线路: ${deduped.length}");
+      return deduped;
     } finally {
       client.close(force: true);
     }
@@ -533,4 +580,16 @@ class _HostResult {
   final int duration;
   _HostResult(
       {required this.host, required this.success, required this.duration});
+}
+
+class ConfigLineOption {
+  final String host;
+  final bool success;
+  final int duration;
+
+  const ConfigLineOption({
+    required this.host,
+    required this.success,
+    required this.duration,
+  });
 }

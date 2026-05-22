@@ -67,6 +67,11 @@ class MinePage extends StatelessWidget {
               onTap: logic.aboutUs,
             ),
             _buildItemView(
+              icon: ImageRes.accountSetup,
+              label: '切换线路',
+              onTap: logic.switchLine,
+            ),
+            _buildItemView(
               icon: ImageRes.logout,
               label: StrRes.logout,
               onTap: logic.logout,

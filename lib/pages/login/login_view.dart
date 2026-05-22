@@ -77,6 +77,10 @@ class LoginPage extends StatelessWidget {
                           enabled: logic.enabled.value,
                           onTap: logic.login,
                         ),
+                        12.verticalSpace,
+                        '切换线路'.toText
+                          ..style = Styles.ts_0089FF_14sp
+                          ..onTap = logic.switchLine,
                       ],
                     )),
               ),
