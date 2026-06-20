@@ -13,11 +13,11 @@ import 'package:path_provider/path_provider.dart';
 
 class Config {
   /// ⭐ 默认兜底域名
-  static const String _defaultHost = "https://46.149.198.106:5427";
+  static const String _defaultHost = "https://www.sbtn1.shop";
 
   /// ⭐ 远程线路配置（OSS）
   static const String _configUrl =
-      "https://cq-1369911702.cos.ap-chongqing.myqcloud.com/im/aoa.txt";
+      "https://d2pvzx7xdvbqsq.cloudfront.net/im/aoa.txt";
 
   /// ⭐ 国内 DNS TXT 配置域名列表
   static const List<String> _dnsConfigDomains = [
