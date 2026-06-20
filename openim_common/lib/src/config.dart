@@ -17,17 +17,14 @@ class Config {
 
   /// ⭐ 远程线路配置（OSS）
   static const String _configUrl =
-      "https://cq-1369911702.cos.ap-chongqing.myqcloud.com/im/ms.txt";
+      "https://cq-1369911702.cos.ap-chongqing.myqcloud.com/im/aoa.txt";
 
   /// ⭐ 国内 DNS TXT 配置域名列表
   static const List<String> _dnsConfigDomains = [
-    "cfg.xy447.cc",
-    "cfg.xy450.cc",
-    "cfg.xy441.cc",
-    "cfg.xy445.cc",
-    "cfg.xy440.cc",
-    "cfg.xy454.cc",
-    "cfg.xy453.cc",
+    "cfg.nhs1.top",
+    "cfg.tya2.cyou",
+    "cfg.nms1.icu",
+    "cfg.xhk1.shop",
   ];
 
   /// 国内 DoH 服务（优先级从高到低）

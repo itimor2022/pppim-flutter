@@ -1,6 +1,6 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=/Users/ma/data/flutter3.22.3"
+export "FLUTTER_ROOT=/Users/ma/data/flutter3.51"
 export "FLUTTER_APPLICATION_PATH=/Users/ma/data/code/openim/pppim-flutter"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_BUILD_DIR=build"

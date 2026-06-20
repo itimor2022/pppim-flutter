@@ -73,7 +73,7 @@
 
     <application
         android:icon="@mipmap/ic_launcher"
-        android:label="民心语"
+        android:label="三北通"
         android:requestLegacyExternalStorage="true"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
