@@ -228,36 +228,24 @@ class Config {
     int concurrency,
     Future<_HostResult> Function(String url) fn,
   ) async {
-    final queue = Queue<String>()..addAll(items);
     final results = <_HostResult>[];
-    final lock = Object(); // ⭐ 添加锁避免并发修改
+    final List<int> indices = List.generate(items.length, (i) => i);
 
-    Future<void> worker() async {
-      while (queue.isNotEmpty) {
-        String item;
-        synchronized(lock, () {
-          if (queue.isEmpty) return;
-          item = queue.removeFirst();
-        });
-        final result = await fn(item);
-        synchronized(lock, () {
-          results.add(result);
-        });
-      }
+    // 分批处理
+    for (int i = 0; i < indices.length; i += concurrency) {
+      final batch = indices.skip(i).take(concurrency).toList();
+      final batchResults =
+          await Future.wait(batch.map((index) => fn(items[index])).toList());
+      results.addAll(batchResults);
     }
 
-    final workers = List.generate(
-      concurrency,
-      (_) => worker(),
-    );
-
-    await Future.wait(workers);
     return results;
   }
 
-  // ⭐ 添加同步工具
+// 简单的同步工具
   static void synchronized(Object lock, void Function() action) {
-    // 简单实现，实际可使用 Synchronized 包
+    // Dart 是单线程的，这里主要是为了代码清晰
+    // 实际可以使用 synchronized 包
     action();
   }
 
