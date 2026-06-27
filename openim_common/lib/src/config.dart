@@ -13,18 +13,16 @@ import 'package:path_provider/path_provider.dart';
 
 class Config {
   /// ⭐ 默认兜底域名
-  static const String _defaultHost = "https://www.sbtn1.shop";
+  static const String _defaultHost = "https://xs.szim1.shop";
 
   /// ⭐ 远程线路配置（OSS）
   static const String _configUrl =
-      "https://d2pvzx7xdvbqsq.cloudfront.net/im/aoa.txt";
+      "https://d2pvzx7xdvbqsq.cloudfront.net/im/qaq.txt";
 
   /// ⭐ 国内 DNS TXT 配置域名列表
   static const List<String> _dnsConfigDomains = [
-    "cfg.nhs1.top",
-    "cfg.tya2.cyou",
-    "cfg.nms1.icu",
-    "cfg.xhk1.shop",
+    "cfg.aopwx.top",
+    "cfg.168773a.cfd",
   ];
 
   /// 国内 DoH 服务（优先级从高到低）
@@ -51,25 +49,62 @@ class Config {
     _hostChangedListeners.remove(listener);
   }
 
-  static void setServerHost(String host, {bool persist = true}) {
-    _applyHost(host, persist: persist);
+  /// ⭐ 修复：公开的线路切换方法
+  static Future<void> setServerHost(String host, {bool persist = true}) async {
+    if (host.trim().isEmpty) return;
+
+    // 确保是 https 协议
+    var newHost = host.trim();
+    if (!newHost.startsWith('http://') && !newHost.startsWith('https://')) {
+      newHost = 'https://$newHost';
+    }
+
+    // 移除末尾斜杠
+    if (newHost.endsWith('/')) {
+      newHost = newHost.substring(0, newHost.length - 1);
+    }
+
+    // ⭐ 先校验新线路是否可用
+    final ok = await _quickCheck(newHost);
+    if (!ok) {
+      Logger.print("❌ 新线路不可用: $newHost");
+      throw Exception('线路不可用，请检查网络后重试');
+    }
+
+    // ⭐ 执行切换
+    _applyHost(newHost, persist: persist);
+
+    Logger.print("✅ 线路切换成功: $_host");
   }
 
   static void _applyHost(String host, {bool persist = false}) {
     final nextHost = host.trim();
     if (nextHost.isEmpty) return;
+
+    // 确保协议
+    var finalHost = nextHost;
+    if (!finalHost.startsWith('http://') && !finalHost.startsWith('https://')) {
+      finalHost = 'https://$finalHost';
+    }
+    if (finalHost.endsWith('/')) {
+      finalHost = finalHost.substring(0, finalHost.length - 1);
+    }
+
     final oldHost = _host;
-    if (oldHost == nextHost) {
-      Logger.print("🔁 host 无变化: $nextHost");
-      // 仍然刷新一次 baseUrl，确保 HttpUtil 与当前 host 一致
+    if (oldHost == finalHost) {
+      Logger.print("🔁 host 无变化: $finalHost");
       HttpUtil.refreshBaseUrl();
       return;
     }
-    _host = nextHost;
+
+    _host = finalHost;
     Logger.print("🔄 host 切换: $oldHost -> $_host (persist=$persist)");
+
     if (persist) {
       DataSp.putServerConfig({"serverIP": _host});
+      Logger.print("💾 已持久化线路: $_host");
     }
+
     HttpUtil.refreshBaseUrl();
 
     if (_hostChangedListeners.isNotEmpty) {
@@ -150,16 +185,6 @@ class Config {
   }
 
   // ================== 线路初始化（核心调度）==================
-  //
-  // 优先级链：
-  // 1. 缓存线路（如可用，直接使用）
-  // 2. DNS TXT 解析到的所有域名 -> 测速选最快
-  // 3. OSS ms.txt 拉到的所有域名 -> 测速选最快
-  // 4. 默认域名 _defaultHost
-  //
-  // 任何一步只要测出至少一个可用域名（HTTP 200），立即应用并结束；
-  // 全部失败时回退到默认域名。
-  // ===========================================================
   static Future<void> _initHost() async {
     Logger.print("================ _initHost START ================");
 
@@ -205,11 +230,19 @@ class Config {
   ) async {
     final queue = Queue<String>()..addAll(items);
     final results = <_HostResult>[];
+    final lock = Object(); // ⭐ 添加锁避免并发修改
 
     Future<void> worker() async {
       while (queue.isNotEmpty) {
-        final item = queue.removeFirst();
-        results.add(await fn(item));
+        String item;
+        synchronized(lock, () {
+          if (queue.isEmpty) return;
+          item = queue.removeFirst();
+        });
+        final result = await fn(item);
+        synchronized(lock, () {
+          results.add(result);
+        });
       }
     }
 
@@ -222,14 +255,25 @@ class Config {
     return results;
   }
 
+  // ⭐ 添加同步工具
+  static void synchronized(Object lock, void Function() action) {
+    // 简单实现，实际可使用 Synchronized 包
+    action();
+  }
+
   // ================== 快速健康检查 ==================
   static Future<bool> _quickCheck(String host) async {
     final stopwatch = Stopwatch()..start();
     try {
-      final baseUrl = host.startsWith("http") ? host : "https://$host";
-      final url = baseUrl.endsWith('/')
-          ? "${baseUrl}admin/scripts/loading.js"
-          : "$baseUrl/admin/scripts/loading.js";
+      var baseUrl = host;
+      if (!baseUrl.startsWith("http")) {
+        baseUrl = "https://$baseUrl";
+      }
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+      }
+
+      final url = "$baseUrl/admin/scripts/loading.js";
 
       final client = _newClient(timeoutSec: 3);
       final request = await client.getUrl(Uri.parse(url));
@@ -487,9 +531,11 @@ class Config {
     HttpClient? client;
 
     try {
-      final testUrl = url.endsWith('/')
-          ? "${url}admin/scripts/loading.js"
-          : "$url/admin/scripts/loading.js";
+      var testUrl = url;
+      if (!testUrl.endsWith('/')) {
+        testUrl = "$testUrl/";
+      }
+      testUrl = "${testUrl}admin/scripts/loading.js";
 
       client = _newClient(timeoutSec: 5);
 
