@@ -17,6 +17,8 @@ class GroupManageLogic extends GetxController {
 
   Rx<GroupInfo> get groupInfo => groupSetupLogic.groupInfo;
 
+  bool get isOwnerOrAdmin => groupSetupLogic.isOwnerOrAdmin;
+
   final isRobotOn = false.obs;
 
   @override

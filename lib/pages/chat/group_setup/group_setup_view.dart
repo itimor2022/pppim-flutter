@@ -30,7 +30,7 @@ class GroupSetupPage extends StatelessWidget {
                   isBottomRadius: !logic.isOwner,
                   onTap: logic.editGroupAnnouncement,
                 ),
-                if (logic.isOwner)
+                if (logic.isOwnerOrAdmin)
                   _buildItemView(
                     text: StrRes.groupManage,
                     showRightArrow: true,

@@ -56,14 +56,16 @@ class GroupManagePage extends StatelessWidget {
                 showRightArrow: true,
                 isBottomRadius: true,
               ),
-              10.verticalSpace,
-              _buildItemView(
-                text: StrRes.transferGroupOwnerRight,
-                onTap: logic.transferGroupOwnerRight,
-                showRightArrow: true,
-                isTopRadius: true,
-                isBottomRadius: true,
-              ),
+              if (logic.isOwnerOrAdmin) ...[
+                10.verticalSpace,
+                _buildItemView(
+                  text: StrRes.transferGroupOwnerRight,
+                  onTap: logic.transferGroupOwnerRight,
+                  showRightArrow: true,
+                  isTopRadius: true,
+                  isBottomRadius: true,
+                ),
+              ],
               10.verticalSpace,
               _buildItemView(
                 text: '本群账单明细',
