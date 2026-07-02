@@ -55,11 +55,11 @@ class PersonalInfoPage extends StatelessWidget {
                     //   value: logic.telephone,
                     //   onTap: logic.clickTel,
                     // ),
-                    _buildItemView(
-                      label: StrRes.mobile,
-                      value: logic.phoneNumber,
-                      onTap: logic.clickPhoneNumber,
-                    ),
+                    // _buildItemView(
+                    //   label: StrRes.mobile,
+                    //   value: logic.phoneNumber,
+                    //   onTap: logic.clickPhoneNumber,
+                    // ),
                     _buildItemView(
                       label: StrRes.email,
                       value: logic.email,
