@@ -266,6 +266,7 @@ class UserProfilePanelPage extends StatelessWidget {
         ),
       );
 
+  // ============ 修改后的 _buildButtonGroup 方法 ============
   Widget _buildButtonGroup() => Positioned(
         bottom: 0.h,
         width: 1.sw,
@@ -278,21 +279,58 @@ class UserProfilePanelPage extends StatelessWidget {
               height: 108.h,
               child: Row(
                 children: [
-                  Expanded(
-                    child: ImageTextButton.call(
-                      onTap: logic.toCall,
+                  // 判断是否为好友
+                  if (logic.isFriendship) ...[
+                    // 是好友：显示通话和消息按钮
+                    Expanded(
+                      child: ImageTextButton.call(
+                        onTap: logic.toCall,
+                      ),
                     ),
-                  ),
-                  11.horizontalSpace,
-                  Expanded(
-                    child: ImageTextButton.message(
-                      onTap: logic.toChat,
+                    11.horizontalSpace,
+                    Expanded(
+                      child: ImageTextButton.message(
+                        onTap: logic.toChat,
+                      ),
                     ),
-                  ),
+                  ] else ...[
+                    // 不是好友：显示添加好友按钮（占满整行）
+                    Expanded(
+                      child: _buildAddFriendButton(),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
         ),
       );
+
+  // 添加好友按钮
+  Widget _buildAddFriendButton() {
+    return Material(
+      child: Ink(
+        height: 46.h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6.r),
+          color: Styles.c_0089FF,
+        ),
+        child: InkWell(
+          onTap: logic.addFriend,
+          borderRadius: BorderRadius.circular(6.r),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ImageRes.addContacts.toImage
+                ..width = 20.w
+                ..height = 20.h
+                ..color = Styles.c_FFFFFF,
+              6.horizontalSpace,
+              StrRes.addFriend.toText..style = Styles.ts_FFFFFF_17sp_semibold,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

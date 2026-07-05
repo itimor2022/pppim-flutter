@@ -27,10 +27,16 @@ android/build/
 android/app/proguard/
 android/.gradle/
 android/local.properties
+android/app/proguard/seeds.txt
 
-# iOS 宿主（根 .gitignore 补充）
+# iOS 宿主（根 .gitignore 补充）[ppp]
 ios/Pods/
 ios/Flutter/ephemeral/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/.symlinks/
+macos/Flutter/ephemeral/flutter_export_environment.sh
+macos/Flutter/ephemeral/Flutter-Generated.xcconfig
+android/app/proguard/seeds.txt
+android/app/proguard/mapping.txt
+android/app/proguard/unused.txt
