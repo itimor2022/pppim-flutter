@@ -2064,7 +2064,7 @@ class ChatLogic extends GetxController {
       onlineStatus.value = status.status == 1;
       onlineStatusDesc.value = status.status == 0
           ? StrRes.offline
-          : _onlineStatusDes(status.platformIDs!) + StrRes.online;
+          : StrRes.online;
     }
   }
 
