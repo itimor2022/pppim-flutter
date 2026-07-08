@@ -6,7 +6,7 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 android/app/proguard/seeds.txt
-
+local_plugin/
 # IDE
 .idea/
 .vscode/
