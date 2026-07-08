@@ -13,6 +13,8 @@ class ChatHistoryMultimediaLogic extends GetxController {
   final groupMessage = <String, List<Message>>{}.obs;
   int pageIndex = 1;
   int pageSize = 50;
+  int? _myJoinAtMillis;
+  bool _joinTimeResolved = false;
 
   @override
   void onInit() {
@@ -23,6 +25,31 @@ class ChatHistoryMultimediaLogic extends GetxController {
 
   bool get isPicture => multimediaType == MultimediaType.picture;
 
+  bool get _isGroupChat => (conversationInfo.groupID ?? '').trim().isNotEmpty;
+
+  Future<int?> _queryMyJoinAtMillis() async {
+    if (!_isGroupChat) return null;
+    if (_joinTimeResolved) return _myJoinAtMillis;
+    _joinTimeResolved = true;
+    try {
+      final list = await OpenIM.iMManager.groupManager.getGroupMembersInfo(
+        groupID: conversationInfo.groupID!,
+        userIDList: [OpenIM.iMManager.userID],
+      );
+      final joinTime = list.isNotEmpty ? (list.first.joinTime ?? 0) : 0;
+      if (joinTime > 0) {
+        _myJoinAtMillis = joinTime * 1000;
+      }
+    } catch (_) {}
+    return _myJoinAtMillis;
+  }
+
+  Future<List<Message>> _filterBeforeJoin(List<Message> list) async {
+    final joinAtMillis = await _queryMyJoinAtMillis();
+    if (joinAtMillis == null) return list;
+    return list.where((msg) => (msg.sendTime ?? 0) >= joinAtMillis).toList();
+  }
+
   @override
   void onReady() {
     onRefresh();
@@ -31,14 +58,13 @@ class ChatHistoryMultimediaLogic extends GetxController {
 
   void onRefresh() async {
     try {
-      var result = await _search(pageIndex = 1);
-      if (result.totalCount == 0) {
+      final list = await _search(pageIndex = 1);
+      if (list.isEmpty) {
         messageList.clear();
         groupMessage.clear();
       } else {
-        var item = result.searchResultItems!.first;
-        messageList.assignAll(item.messageList!);
-        groupMessage.assignAll(IMUtils.groupingMessage(item.messageList!.reversed.toList()));
+        messageList.assignAll(list);
+        groupMessage.assignAll(IMUtils.groupingMessage(list.reversed.toList()));
       }
     } finally {
       refreshController.refreshCompleted();
@@ -52,11 +78,10 @@ class ChatHistoryMultimediaLogic extends GetxController {
 
   void onLoad() async {
     try {
-      var result = await _search(++pageIndex);
-      if (result.totalCount! > 0) {
-        var item = result.searchResultItems!.first;
-        messageList.addAll(item.messageList!);
-        groupMessage.addAll(IMUtils.groupingMessage(item.messageList!.reversed.toList()));
+      final list = await _search(++pageIndex);
+      if (list.isNotEmpty) {
+        messageList.addAll(list);
+        groupMessage.addAll(IMUtils.groupingMessage(list.reversed.toList()));
       }
     } finally {
       if (messageList.length < pageIndex * pageSize) {
@@ -67,14 +92,21 @@ class ChatHistoryMultimediaLogic extends GetxController {
     }
   }
 
-  Future<SearchResult> _search(int pageIndex) {
-    return OpenIM.iMManager.messageManager.searchLocalMessages(
+  Future<List<Message>> _search(int pageIndex) async {
+    final result = await OpenIM.iMManager.messageManager.searchLocalMessages(
       conversationID: conversationInfo.conversationID,
       keywordList: [],
       messageTypeList: [isPicture ? MessageType.picture : MessageType.video],
       pageIndex: pageIndex,
       count: pageSize,
     );
+    if ((result.totalCount ?? 0) == 0 ||
+        result.searchResultItems == null ||
+        result.searchResultItems!.isEmpty) {
+      return [];
+    }
+    final list = result.searchResultItems!.first.messageList ?? <Message>[];
+    return _filterBeforeJoin(list);
   }
 
   void viewMultimedia(Message message) {
@@ -86,6 +118,8 @@ class ChatHistoryMultimediaLogic extends GetxController {
   }
 
   String getSnapshotUrl(Message message) {
-    return isPicture ? message.pictureElem!.sourcePicture!.url!.thumbnailAbsoluteString : message.videoElem!.snapshotUrl!.thumbnailAbsoluteString;
+    return isPicture
+        ? message.pictureElem!.sourcePicture!.url!.thumbnailAbsoluteString
+        : message.videoElem!.snapshotUrl!.thumbnailAbsoluteString;
   }
 }

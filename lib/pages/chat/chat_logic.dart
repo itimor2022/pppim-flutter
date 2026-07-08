@@ -2820,7 +2820,28 @@ class ChatLogic extends GetxController {
         }
       }
     }
+    final myJoinAtMillis = await _queryMyJoinAtMillis();
+    if (myJoinAtMillis != null && result.messageList != null) {
+      result.messageList = result.messageList!
+          .where((msg) => (msg.sendTime ?? 0) >= myJoinAtMillis)
+          .toList();
+    }
     return result;
+  }
+
+  Future<int?> _queryMyJoinAtMillis() async {
+    if (!isGroupChat) return null;
+    final cached = groupMembersInfo?.joinTime ?? 0;
+    if (cached > 0) {
+      return cached * 1000;
+    }
+    try {
+      await _queryMyGroupMemberInfo();
+    } catch (_) {
+      return null;
+    }
+    final joinTime = groupMembersInfo?.joinTime ?? 0;
+    return joinTime > 0 ? joinTime * 1000 : null;
   }
 
   Future<bool> onScrollToBottomLoad() async {

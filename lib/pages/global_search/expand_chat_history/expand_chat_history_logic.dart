@@ -18,6 +18,8 @@ class ExpandChatHistoryLogic extends GetxController {
   late String defaultSearchKey;
   var pageIndex = 1;
   var pageSize = 20;
+  int? _joinAtMillis;
+  bool _joinTimeResolved = false;
 
   @override
   void onInit() {
@@ -58,7 +60,37 @@ class ExpandChatHistoryLogic extends GetxController {
         usedWidth: 80.w + 26.w,
       );
 
-  Future<SearchResult> _request(int pageIndex) => OpenIM.iMManager.messageManager.searchLocalMessages(
+  bool get _isGroupChat =>
+      searchResultItems.value.conversationType == ConversationType.group ||
+      searchResultItems.value.conversationType == ConversationType.superGroup;
+
+  Future<int?> _queryJoinAtMillis() async {
+    if (!_isGroupChat) return null;
+    if (_joinTimeResolved) return _joinAtMillis;
+    _joinTimeResolved = true;
+    final groupID = searchResultItems.value.messageList?.firstOrNull?.groupID;
+    if (groupID == null || groupID.trim().isEmpty) return null;
+    try {
+      final list = await OpenIM.iMManager.groupManager.getGroupMembersInfo(
+        groupID: groupID,
+        userIDList: [OpenIM.iMManager.userID],
+      );
+      final joinTime = list.isNotEmpty ? (list.first.joinTime ?? 0) : 0;
+      if (joinTime > 0) {
+        _joinAtMillis = joinTime * 1000;
+      }
+    } catch (_) {}
+    return _joinAtMillis;
+  }
+
+  Future<List<Message>> _filterBeforeJoin(List<Message> list) async {
+    final joinAtMillis = await _queryJoinAtMillis();
+    if (joinAtMillis == null) return list;
+    return list.where((msg) => (msg.sendTime ?? 0) >= joinAtMillis).toList();
+  }
+
+  Future<SearchResult> _request(int pageIndex) =>
+      OpenIM.iMManager.messageManager.searchLocalMessages(
         conversationID: searchResultItems.value.conversationID,
         keywordList: [searchKey],
         messageTypeList: [MessageType.text, MessageType.atText],
@@ -70,6 +102,11 @@ class ExpandChatHistoryLogic extends GetxController {
     var result = await _request(pageIndex = 1);
     var list = result.searchResultItems;
     if (null != list && list.isNotEmpty) {
+      final filtered =
+          await _filterBeforeJoin(list.first.messageList ?? <Message>[]);
+      list.first
+        ..messageList = filtered
+        ..messageCount = filtered.length;
       searchResultItems.value = list.first;
       if (searchResultItems.value.messageCount! < pageSize) {
         refreshCtrl.loadNoData();
@@ -86,10 +123,11 @@ class ExpandChatHistoryLogic extends GetxController {
     var list = result.searchResultItems;
     if (null != list && list.isNotEmpty) {
       var item = list.first;
+      final filtered = await _filterBeforeJoin(item.messageList ?? <Message>[]);
       searchResultItems.update((val) {
-        val?.messageList?.addAll(item.messageList!);
+        val?.messageList?.addAll(filtered);
       });
-      if (item.messageCount! < pageSize) {
+      if (filtered.length < pageSize) {
         refreshCtrl.loadNoData();
       } else {
         refreshCtrl.loadComplete();
@@ -99,7 +137,8 @@ class ExpandChatHistoryLogic extends GetxController {
     }
   }
 
-  void previewMessageHistory(Message message) => AppNavigator.startPreviewChatHistory(
+  void previewMessageHistory(Message message) =>
+      AppNavigator.startPreviewChatHistory(
         conversationInfo: ConversationInfo(
           conversationID: searchResultItems.value.conversationID!,
           showName: searchResultItems.value.showName,
@@ -110,7 +149,8 @@ class ExpandChatHistoryLogic extends GetxController {
 
   void toChat() async {
     final list = await LoadingView.singleton.wrap(
-      asyncFunction: () => OpenIM.iMManager.conversationManager.getMultipleConversation(
+      asyncFunction: () =>
+          OpenIM.iMManager.conversationManager.getMultipleConversation(
         conversationIDList: [searchResultItems.value.conversationID!],
       ),
     );

@@ -17,6 +17,8 @@ class SearchChatHistoryLogic extends GetxController {
   final searchKey = "".obs;
   int pageIndex = 1;
   int pageSize = 50;
+  int? _myJoinAtMillis;
+  bool _joinTimeResolved = false;
 
   @override
   void onInit() {
@@ -45,25 +47,60 @@ class SearchChatHistoryLogic extends GetxController {
     messageList.clear();
   }
 
-  bool get isSearchNotResult => searchKey.value.isNotEmpty && messageList.isEmpty;
+  bool get isSearchNotResult =>
+      searchKey.value.isNotEmpty && messageList.isEmpty;
 
   bool get isNotKey => searchKey.value.isEmpty;
 
+  bool get _isGroupChat => (conversationInfo.groupID ?? '').trim().isNotEmpty;
+
+  Future<int?> _queryMyJoinAtMillis() async {
+    if (!_isGroupChat) return null;
+    if (_joinTimeResolved) return _myJoinAtMillis;
+    _joinTimeResolved = true;
+    try {
+      final list = await OpenIM.iMManager.groupManager.getGroupMembersInfo(
+        groupID: conversationInfo.groupID!,
+        userIDList: [OpenIM.iMManager.userID],
+      );
+      final joinTime = list.isNotEmpty ? (list.first.joinTime ?? 0) : 0;
+      if (joinTime > 0) {
+        _myJoinAtMillis = joinTime * 1000;
+      }
+    } catch (_) {}
+    return _myJoinAtMillis;
+  }
+
+  Future<List<Message>> _filterBeforeJoin(List<Message> list) async {
+    final joinAtMillis = await _queryMyJoinAtMillis();
+    if (joinAtMillis == null) return list;
+    return list.where((msg) => (msg.sendTime ?? 0) >= joinAtMillis).toList();
+  }
+
+  Future<List<Message>> _searchMessageList({required int page}) async {
+    final result = await OpenIM.iMManager.messageManager.searchLocalMessages(
+      conversationID: conversationInfo.conversationID,
+      keywordList: [searchKey.value],
+      pageIndex: page,
+      count: pageSize,
+      messageTypeList: [MessageType.text, MessageType.atText],
+    );
+    if ((result.totalCount ?? 0) == 0 ||
+        result.searchResultItems == null ||
+        result.searchResultItems!.isEmpty) {
+      return [];
+    }
+    final list = result.searchResultItems!.first.messageList ?? <Message>[];
+    return _filterBeforeJoin(list);
+  }
+
   void search() async {
     try {
-      // searchKey.value = searchCtrl.text.trim();
-      var result = await OpenIM.iMManager.messageManager.searchLocalMessages(
-        conversationID: conversationInfo.conversationID,
-        keywordList: [searchKey.value],
-        pageIndex: pageIndex = 1,
-        count: pageSize,
-        messageTypeList: [MessageType.text, MessageType.atText],
-      );
-      if (result.totalCount == 0) {
+      final list = await _searchMessageList(page: pageIndex = 1);
+      if (list.isEmpty) {
         messageList.clear();
       } else {
-        var item = result.searchResultItems!.first;
-        messageList.assignAll(item.messageList!);
+        messageList.assignAll(list);
       }
     } finally {
       if (messageList.length < pageIndex * pageSize) {
@@ -76,16 +113,9 @@ class SearchChatHistoryLogic extends GetxController {
 
   load() async {
     try {
-      var result = await OpenIM.iMManager.messageManager.searchLocalMessages(
-        conversationID: conversationInfo.conversationID,
-        keywordList: [searchKey.value],
-        pageIndex: ++pageIndex,
-        count: pageSize,
-        messageTypeList: [MessageType.text, MessageType.atText],
-      );
-      if (result.totalCount! > 0) {
-        var item = result.searchResultItems!.first;
-        messageList.addAll(item.messageList!);
+      final list = await _searchMessageList(page: ++pageIndex);
+      if (list.isNotEmpty) {
+        messageList.addAll(list);
       }
     } finally {
       if (messageList.length < (pageSize * pageIndex)) {
@@ -108,11 +138,13 @@ class SearchChatHistoryLogic extends GetxController {
     );
   }
 
-  void searchChatHistoryPicture() => AppNavigator.startSearchChatHistoryMultimedia(
+  void searchChatHistoryPicture() =>
+      AppNavigator.startSearchChatHistoryMultimedia(
         conversationInfo: conversationInfo,
       );
 
-  void searchChatHistoryVideo() => AppNavigator.startSearchChatHistoryMultimedia(
+  void searchChatHistoryVideo() =>
+      AppNavigator.startSearchChatHistoryMultimedia(
         conversationInfo: conversationInfo,
         multimediaType: MultimediaType.video,
       );
@@ -121,7 +153,8 @@ class SearchChatHistoryLogic extends GetxController {
         conversationInfo: conversationInfo,
       );
 
-  void previewMessageHistory(Message message) => AppNavigator.startPreviewChatHistory(
+  void previewMessageHistory(Message message) =>
+      AppNavigator.startPreviewChatHistory(
         conversationInfo: conversationInfo,
         message: message,
       );

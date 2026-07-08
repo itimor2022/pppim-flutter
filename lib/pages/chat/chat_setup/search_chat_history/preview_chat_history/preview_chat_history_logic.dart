@@ -19,6 +19,8 @@ class PreviewChatHistoryLogic extends GetxController {
 
   int? upLastMinSeq;
   int? downLostMinSeq;
+  int? _myJoinAtMillis;
+  bool _joinTimeResolved = false;
 
   @override
   void onReady() {
@@ -36,8 +38,34 @@ class PreviewChatHistoryLogic extends GetxController {
     super.onInit();
   }
 
+  bool get _isGroupChat => (conversationInfo.groupID ?? '').trim().isNotEmpty;
+
+  Future<int?> _queryMyJoinAtMillis() async {
+    if (!_isGroupChat) return null;
+    if (_joinTimeResolved) return _myJoinAtMillis;
+    _joinTimeResolved = true;
+    try {
+      final list = await OpenIM.iMManager.groupManager.getGroupMembersInfo(
+        groupID: conversationInfo.groupID!,
+        userIDList: [OpenIM.iMManager.userID],
+      );
+      final joinTime = list.isNotEmpty ? (list.first.joinTime ?? 0) : 0;
+      if (joinTime > 0) {
+        _myJoinAtMillis = joinTime * 1000;
+      }
+    } catch (_) {}
+    return _myJoinAtMillis;
+  }
+
+  Future<List<Message>> _filterBeforeJoin(List<Message> list) async {
+    final joinAtMillis = await _queryMyJoinAtMillis();
+    if (joinAtMillis == null) return list;
+    return list.where((msg) => (msg.sendTime ?? 0) >= joinAtMillis).toList();
+  }
+
   Future<bool> scrollToTopLoad() async {
-    var result = await OpenIM.iMManager.messageManager.getAdvancedHistoryMessageList(
+    var result =
+        await OpenIM.iMManager.messageManager.getAdvancedHistoryMessageList(
       startMsg: messageList.first,
       conversationID: conversationInfo.conversationID,
       count: 20,
@@ -45,7 +73,7 @@ class PreviewChatHistoryLogic extends GetxController {
     );
 
     upLastMinSeq = result.lastMinSeq;
-    var list = result.messageList ?? [];
+    var list = await _filterBeforeJoin(result.messageList ?? []);
 
     final hasMore = list.length == 20;
     controller.insertAllToTop(list);
@@ -55,14 +83,15 @@ class PreviewChatHistoryLogic extends GetxController {
   }
 
   Future<bool> scrollToBottomLoad() async {
-    var result = await OpenIM.iMManager.messageManager.getAdvancedHistoryMessageListReverse(
+    var result = await OpenIM.iMManager.messageManager
+        .getAdvancedHistoryMessageListReverse(
       startMsg: messageList.last,
       conversationID: conversationInfo.conversationID,
       count: 20,
       lastMinSeq: downLostMinSeq,
     );
     downLostMinSeq = result.lastMinSeq;
-    var list = result.messageList ?? [];
+    var list = await _filterBeforeJoin(result.messageList ?? []);
 
     final hasMore = list.length == 20;
 
@@ -101,7 +130,8 @@ class PreviewChatHistoryLogic extends GetxController {
   }
 
   void copy(Message message) {
-    IMUtils.copy(text: copyTextMap[message.clientMsgID] ?? message.textElem!.content!);
+    IMUtils.copy(
+        text: copyTextMap[message.clientMsgID] ?? message.textElem!.content!);
   }
 
   ValueKey itemKey(Message message) => ValueKey(message.clientMsgID!);
@@ -137,7 +167,8 @@ mixin ListViewDataCtrl {
 
   List<Message> get messageList => controller.value.list;
 
-  bool get isScrollBottom => scrollController.offset == scrollController.position.maxScrollExtent;
+  bool get isScrollBottom =>
+      scrollController.offset == scrollController.position.maxScrollExtent;
 
   final newMessageCount = 0.obs;
   int newMessageStartPosition = -1;
