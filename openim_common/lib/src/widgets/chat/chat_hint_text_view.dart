@@ -154,8 +154,61 @@ class ChatHintTextView extends StatelessWidget {
         }
       case MessageType.memberKickedNotification:
         {
-          // Hide kicked-group hints.
-          return const SizedBox.shrink();
+          final aMap = <String, String>{};
+          final bMap = <String, String>{};
+          final infoMap = <String, GroupMembersInfo>{};
+          final ntf = KickedGroupMemeberNotification.fromJson(map);
+          // final a = IMUtils.getGroupMemberShowName(ntf.opUser!);
+          // final a = ntf.opUser!.userID;
+          // final b = ntf.kickedUserList
+          //     ?.map((e) => IMUtils.getGroupMemberShowName(e))
+          //     .toList()
+          //     .join('、');
+
+          aMap[ntf.opUser!.userID!] = IMUtils.getGroupMemberShowName(ntf.opUser!);
+          infoMap[ntf.opUser!.userID!] = ntf.opUser!;
+
+          for (var user in ntf.kickedUserList!) {
+            bMap[user.userID!] = IMUtils.getGroupMemberShowName(user);
+            infoMap[user.userID!] = user;
+          }
+
+          final a = ntf.opUser!.userID!;
+          final b = bMap.keys.join('、');
+          String pattern = '(${[a, ...bMap.keys].join('|')})';
+
+          final text = sprintf(StrRes.kickedGroupNtf, [b, a]);
+          final List<InlineSpan> children = <InlineSpan>[];
+          text.splitMapJoin(
+            RegExp(pattern),
+            // RegExp('($a|$b)'),
+            onMatch: (match) {
+              final text = match[0]!;
+              final value = aMap[text] ?? bMap[text] ?? '';
+              final info = infoMap[text];
+              children.add(TextSpan(
+                text: value,
+                style: Styles.ts_0089FF_12sp,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => bridge?.viewUserProfile(
+                        info!.userID!,
+                        info.nickname,
+                        info.faceURL,
+                        groupID,
+                      ),
+              ));
+              return '';
+            },
+            onNonMatch: (text) {
+              children.add(TextSpan(text: text, style: Styles.ts_8E9AB0_12sp));
+              return '';
+            },
+          );
+          // b 被 a 移出群聊
+          return RichText(
+            text: TextSpan(children: children),
+            textAlign: TextAlign.center,
+          );
         }
       case MessageType.memberEnterNotification:
         {
