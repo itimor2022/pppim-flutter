@@ -25,6 +25,7 @@ class ChatRevokeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bridge = PackageBridge.viewUserProfileBridge;
     final groupID = message.groupID;
+    final isGroupChat = groupID?.isNotEmpty == true;
     String? revoker, sender;
     final value = <String, String>{};
     // 群聊撤回包含：撤回自己消息，群组或管理员撤回其他人消息
@@ -55,6 +56,9 @@ class ChatRevokeView extends StatelessWidget {
 
     final List<InlineSpan> children = <InlineSpan>[];
     if (sender != null) {
+      if (isGroupChat) {
+        return const SizedBox.shrink();
+      }
       final text = sprintf(StrRes.aRevokeBMsg, [revoker, sender]);
       text.splitMapJoin(
         RegExp('($revoker|$sender)'),

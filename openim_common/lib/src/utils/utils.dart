@@ -655,14 +655,8 @@ class IMUtils {
             break;
           case MessageType.memberKickedNotification:
             {
-              final ntf = KickedGroupMemeberNotification.fromJson(map);
-              // b 被 a 踢出群聊
-              final label = StrRes.kickedGroupNtf;
-              final b = ntf.kickedUserList!
-                  .map((e) => getGroupMemberShowName(e))
-                  .toList()
-                  .join('、');
-              text = sprintf(label, [b, getGroupMemberShowName(ntf.opUser!)]);
+              // Hide kicked-group notifications.
+              return null;
             }
             break;
           case MessageType.memberEnterNotification:
