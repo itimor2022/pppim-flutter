@@ -5,6 +5,7 @@ class UserExUtil {
 
   static const String _vipKey = 'vip';
   static const String _prettyKey = 'pretty';
+  static const String _levelKey = 'level';
   static const String _allowDoubleDeleteMessageKey = 'allowDoubleDeleteMessage';
 
   static Map<String, dynamic> parse(String? ex) {
@@ -37,6 +38,14 @@ class UserExUtil {
       return value == 'true' || value == '1' || value == 'yes';
     }
     return false;
+  }
+
+  static int? level(String? ex) {
+    final value = parse(ex)[_levelKey];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
   }
 
   static bool allowDoubleDeleteMessage(String? ex) {

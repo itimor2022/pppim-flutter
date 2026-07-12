@@ -177,12 +177,12 @@ class ConversationPage extends StatelessWidget {
                                   ..overflow = TextOverflow.ellipsis,
                               ),
                               if (logic.isPretty(info) ||
-                                  logic.isVip(info)) ...[
+                                  logic.levelOf(info) != null) ...[
                                 6.horizontalSpace,
                                 UserIdentityBadges(
                                   compact: true,
                                   isPretty: logic.isPretty(info),
-                                  isVip: logic.isVip(info),
+                                  level: logic.levelOf(info),
                                 ),
                               ],
                               const Spacer(),

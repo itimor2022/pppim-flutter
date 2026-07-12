@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:openim_common/openim_common.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/controller/app_controller.dart';
 import '../../core/controller/im_controller.dart';
@@ -13,6 +14,8 @@ import '../../routes/app_pages.dart';
 class MineLogic extends GetxController {
   final imLogic = Get.find<IMController>();
   final appLogic = Get.find<AppController>();
+  final appName = ''.obs;
+  final version = ''.obs;
 
   bool get openSignIn => appLogic.openSignIn;
   final pushLogic = Get.find<PushController>();
@@ -117,6 +120,18 @@ class MineLogic extends GetxController {
       kickedOffline();
     });
     super.onInit();
+  }
+
+  @override
+  void onReady() {
+    _loadPackageInfo();
+    super.onReady();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    appName.value = info.appName;
+    version.value = info.version;
   }
 
   @override

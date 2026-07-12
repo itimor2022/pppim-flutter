@@ -8,21 +8,31 @@ class UserIdentityBadges extends StatelessWidget {
   const UserIdentityBadges({
     super.key,
     this.ex,
-    this.isVip,
+    this.level,
     this.isPretty,
     this.compact = false,
   });
 
   final String? ex;
-  final bool? isVip;
+  final int? level;
   final bool? isPretty;
   final bool compact;
+
+  static const Map<int, String> _levelTitleMap = {
+    1: '数字新星',
+    2: '数字精英',
+    3: '数字典范',
+    4: '数字卓越',
+    5: '数字领军',
+    6: '数字引领者',
+    7: '数字开拓者',
+  };
 
   @override
   Widget build(BuildContext context) {
     final pretty = isPretty ?? UserExUtil.isPretty(ex);
-    final vip = isVip ?? UserExUtil.isVip(ex);
-    if (!pretty && !vip) return const SizedBox.shrink();
+    final levelText = _levelTitleMap[UserExUtil.level(ex) ?? level];
+    if (!pretty && levelText == null) return const SizedBox.shrink();
 
     return Wrap(
       spacing: 6.w,
@@ -38,11 +48,11 @@ class UserIdentityBadges extends StatelessWidget {
             borderColor: const Color(0xFF6AB8FF),
             colors: const [Color(0xFFEAF6FF), Color(0xFFB9E0FF)],
           ),
-        if (vip)
+        if (levelText != null)
           _IdentityBadge(
             compact: compact,
-            text: '领航',
-            icon: Icons.explore_rounded,
+            text: levelText,
+            icon: Icons.workspace_premium_rounded,
             textColor: const Color(0xFF6B4E00),
             borderColor: const Color(0xFFD4AF37),
             colors: const [Color(0xFFFFF2BF), Color(0xFFF7D774)],

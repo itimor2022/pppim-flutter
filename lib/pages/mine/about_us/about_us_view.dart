@@ -32,10 +32,10 @@ class AboutUsPage extends StatelessWidget {
             child: Column(
               children: [
                 23.verticalSpace,
-                ImageRes.splashLogo.toImage
-                  ..width = 55.w
-                  ..height = 78.h,
-                10.verticalSpace,
+                // ImageRes.splashLogo.toImage
+                //   ..width = 55.w
+                //   ..height = 78.h,
+                // 10.verticalSpace,
                 Obx(() => '${logic.appName} ${logic.version.value}'.toText
                   ..style = Styles.ts_0C1C33_14sp),
                 16.verticalSpace,

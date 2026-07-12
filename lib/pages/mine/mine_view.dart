@@ -62,11 +62,6 @@ class MinePage extends StatelessWidget {
               onTap: logic.accountSetup,
             ),
             _buildItemView(
-              icon: ImageRes.aboutUs,
-              label: StrRes.aboutUs,
-              onTap: logic.aboutUs,
-            ),
-            _buildItemView(
               icon: ImageRes.accountSetup,
               label: '切换线路',
               onTap: logic.switchLine,
@@ -77,6 +72,10 @@ class MinePage extends StatelessWidget {
               onTap: logic.logout,
               isBottomRadius: true,
             ),
+            22.verticalSpace,
+            Obx(() => '${logic.appName.value} ${logic.version.value}'.toText
+              ..style = Styles.ts_8E9AB0_12sp),
+            20.verticalSpace,
           ],
         ),
       ),
@@ -117,11 +116,14 @@ class MinePage extends StatelessWidget {
                       ),
                       if (UserExUtil.isPretty(
                               logic.imLogic.userInfo.value.ex) ||
-                          UserExUtil.isVip(
-                              logic.imLogic.userInfo.value.ex)) ...[
+                          logic.imLogic.userInfo.value.level != null ||
+                          UserExUtil.level(
+                            logic.imLogic.userInfo.value.ex) !=
+                              null) ...[
                         6.horizontalSpace,
                         UserIdentityBadges(
                           ex: logic.imLogic.userInfo.value.ex,
+                          level: logic.imLogic.userInfo.value.level,
                           compact: true,
                         ),
                       ],

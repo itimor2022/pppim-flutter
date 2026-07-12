@@ -64,9 +64,14 @@ class FriendListPage extends StatelessWidget {
                           ..overflow = TextOverflow.ellipsis,
                       ),
                       if (UserExUtil.isPretty(info.ex) ||
-                          UserExUtil.isVip(info.ex)) ...[
+                          info.level != null ||
+                          UserExUtil.level(info.ex) != null) ...[
                         6.horizontalSpace,
-                        UserIdentityBadges(ex: info.ex, compact: true),
+                        UserIdentityBadges(
+                          ex: info.ex,
+                          level: info.level,
+                          compact: true,
+                        ),
                       ],
                     ],
                   ),

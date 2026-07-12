@@ -134,6 +134,7 @@ class UserProfilePanelLogic extends GetxController {
         val?.nickname = user.nickname;
         val?.faceURL = user.faceURL;
         val?.remark = user.friendInfo?.remark;
+        val?.level = fullInfo?.level;
         val?.ex = user.friendInfo?.ex ?? user.publicInfo?.ex ?? fullInfo?.ex;
         val?.isBlacklist = isBlack;
         val?.isFriendship = isFriendship;

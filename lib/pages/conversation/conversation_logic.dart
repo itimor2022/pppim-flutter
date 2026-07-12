@@ -24,9 +24,9 @@ class ConversationLogic extends GetxController {
   final refreshController = RefreshController();
   final tempDraftText = <String, String>{};
   final pageSize = 40;
-  final _singleChatVipMap = <String, bool>{};
+  final _singleChatLevelMap = <String, int?>{};
   final _singleChatPrettyMap = <String, bool>{};
-  final _loadingVipUsers = <String>{};
+  final _loadingIdentityUsers = <String>{};
 
   final imStatus = IMSdkStatus.connectionSucceeded.obs;
 
@@ -217,11 +217,11 @@ class ConversationLogic extends GetxController {
     return info.showName!;
   }
 
-  bool isVip(ConversationInfo info) {
-    if (!info.isSingleChat) return false;
+  int? levelOf(ConversationInfo info) {
+    if (!info.isSingleChat) return null;
     final userID = info.userID;
-    if (userID == null || userID.isEmpty) return false;
-    return _singleChatVipMap[userID] == true;
+    if (userID == null || userID.isEmpty) return null;
+    return _singleChatLevelMap[userID];
   }
 
   bool isPretty(ConversationInfo info) {
@@ -361,25 +361,26 @@ class ConversationLogic extends GetxController {
             info.isSingleChat && info.userID != null && info.userID!.isNotEmpty)
         .map((info) => info.userID!)
         .where((userID) =>
-            !_singleChatVipMap.containsKey(userID) &&
-            !_loadingVipUsers.contains(userID))
+            !_singleChatLevelMap.containsKey(userID) &&
+            !_loadingIdentityUsers.contains(userID))
         .toSet()
         .toList();
     if (userIDs.isEmpty) return;
 
-    _loadingVipUsers.addAll(userIDs);
+    _loadingIdentityUsers.addAll(userIDs);
     try {
       final users =
           await OpenIM.iMManager.userManager.getUsersInfoWithCache(userIDs);
       var changed = false;
       for (final user in users) {
         final ex = user.friendInfo?.ex ?? user.publicInfo?.ex;
-        final isVip = UserExUtil.isVip(ex);
+        final level = UserExUtil.level(ex);
         final isPretty = UserExUtil.isPretty(ex);
         final userID = user.userID;
         if (userID.isEmpty) continue;
-        if (_singleChatVipMap[userID] != isVip) {
-          _singleChatVipMap[userID] = isVip;
+        if (!_singleChatLevelMap.containsKey(userID) ||
+            _singleChatLevelMap[userID] != level) {
+          _singleChatLevelMap[userID] = level;
           changed = true;
         }
         if (_singleChatPrettyMap[userID] != isPretty) {
@@ -389,7 +390,7 @@ class ConversationLogic extends GetxController {
       }
       if (changed) list.refresh();
     } finally {
-      _loadingVipUsers.removeAll(userIDs);
+      _loadingIdentityUsers.removeAll(userIDs);
     }
   }
 
