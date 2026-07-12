@@ -410,12 +410,17 @@ class _ChatItemViewState extends State<ChatItemView> {
         }
       }
     } else if (_message.isRevokeType) {
+      if (_message.isGroupChat) return const SizedBox.shrink();
       return child = ChatRevokeView(
         message: _message,
         onReEdit: widget.onReEit,
         canReEdit: widget.canReEdit,
       );
     } else if (_message.isNotificationType) {
+      if (_message.isGroupChat &&
+          _message.contentType == MessageType.memberKickedNotification) {
+        return const SizedBox.shrink();
+      }
       if (_message.contentType ==
           MessageType.groupInfoSetAnnouncementNotification) {
         final map = json.decode(_message.notificationElem!.detail!);
