@@ -73,16 +73,66 @@ class GroupListPage extends StatelessWidget {
                   isGroup: true,
                 ),
                 10.horizontalSpace,
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    (info.groupName ?? '').toText
-                      ..style = Styles.ts_0C1C33_17sp,
-                    sprintf(StrRes.nPerson, [logic.displayMemberCount(info)])
-                        .toText
-                      ..style = Styles.ts_8E9AB0_14sp,
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: (info.groupName ?? '').toText
+                              ..style = Styles.ts_0C1C33_17sp
+                              ..maxLines = 1
+                              ..overflow = TextOverflow.ellipsis,
+                          ),
+                          if (UserExUtil.groupLevelTitle(info.ex) != null) ...[
+                            6.horizontalSpace,
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 7.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFFF1F3),
+                                    Color(0xFFFFD9DF),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10.r),
+                                border: Border.all(
+                                  color: const Color(0xFFFF6B7A),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.whatshot_rounded,
+                                    size: 10.sp,
+                                    color: const Color(0xFFC62839),
+                                  ),
+                                  2.horizontalSpace,
+                                  (UserExUtil.groupLevelTitle(info.ex) ?? '')
+                                      .toText
+                                    ..style = Styles.ts_0C1C33_10sp.copyWith(
+                                      color: const Color(0xFFC62839),
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.1,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      sprintf(StrRes.nPerson, [logic.displayMemberCount(info)])
+                          .toText
+                        ..style = Styles.ts_8E9AB0_14sp,
+                    ],
+                  ),
                 ),
               ],
             ),

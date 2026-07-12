@@ -80,6 +80,7 @@ class ChatLogic extends GetxController {
   var _lastCursorIndex = -1;
   final onlineStatus = false.obs;
   final onlineStatusDesc = ''.obs;
+  final groupLevelTitle = ''.obs;
   Timer? onlineStatusTimer;
   final favoriteList = <String>[].obs;
   final scaleFactor = Config.textScaleFactor.obs;
@@ -221,6 +222,9 @@ class ChatLogic extends GetxController {
     conversationInfo = arguments['conversationInfo'];
     searchMessage = arguments['searchMessage'];
     nickname.value = conversationInfo.showName ?? '';
+    if (isGroupChat) {
+      groupLevelTitle.value = UserExUtil.groupLevelTitle(conversationInfo.ex) ?? '';
+    }
     faceUrl.value = conversationInfo.faceURL ?? '';
     _clearUnreadCount();
     _initChatConfig();
@@ -404,6 +408,7 @@ class ChatLogic extends GetxController {
       if (groupID == value.groupID) {
         nickname.value = value.groupName ?? '';
         faceUrl.value = value.faceURL ?? '';
+        groupLevelTitle.value = UserExUtil.groupLevelTitle(value.ex) ?? '';
         groupMutedStatus.value = value.status ?? 0;
         groupInfo = value;
         groupOwnerID = value.ownerUserID;
@@ -1717,9 +1722,15 @@ class ChatLogic extends GetxController {
   }
 
   // String getSubTile() => typing.value ? StrRes.typing : onlineStatusDesc.value;
-  String? get subTile => typing.value ? StrRes.typing : onlineStatusDesc.value;
+  String? get subTile {
+    if (isGroupChat) {
+      return groupLevelTitle.value.isEmpty ? null : groupLevelTitle.value;
+    }
+    return typing.value ? StrRes.typing : onlineStatusDesc.value;
+  }
 
-  bool showOnlineStatus() => !typing.value && onlineStatusDesc.isNotEmpty;
+  bool showOnlineStatus() =>
+      !isGroupChat && !typing.value && onlineStatusDesc.isNotEmpty;
 
   /// 语音视频通话信息不显示读状态
   bool enabledReadStatus(Message message) {
@@ -2009,6 +2020,9 @@ class ChatLogic extends GetxController {
         groupIDList: [groupID!],
       );
       groupInfo = list.firstOrNull;
+        groupLevelTitle.value = UserExUtil.groupLevelTitle(groupInfo?.ex) ??
+          UserExUtil.groupLevelTitle(conversationInfo.ex) ??
+          '';
       groupOwnerID = groupInfo?.ownerUserID;
       if (_isExitUnreadAnnouncement()) {
         announcement.value = groupInfo?.notification ?? '';

@@ -26,7 +26,9 @@ class ConversationLogic extends GetxController {
   final pageSize = 40;
   final _singleChatLevelMap = <String, int?>{};
   final _singleChatPrettyMap = <String, bool>{};
+  final _groupLevelTitleMap = <String, String?>{};
   final _loadingIdentityUsers = <String>{};
+  final _loadingGroupLevels = <String>{};
 
   final imStatus = IMSdkStatus.connectionSucceeded.obs;
 
@@ -54,6 +56,7 @@ class ConversationLogic extends GetxController {
     list.insertAll(0, newList);
     _sortConversationList();
     _syncSingleChatIdentityStatus(newList.cast<ConversationInfo>());
+    _syncGroupLevelStatus(newList.cast<ConversationInfo>());
   }
 
   /// 提示音
@@ -209,6 +212,16 @@ class ConversationLogic extends GetxController {
     return info.isGroupChat;
   }
 
+  String? groupLevelTitleOf(ConversationInfo info) {
+    if (!info.isGroupChat) return null;
+    final groupID = info.groupID;
+    if (groupID != null && groupID.isNotEmpty) {
+      final cached = _groupLevelTitleMap[groupID];
+      if (cached != null) return cached;
+    }
+    return UserExUtil.groupLevelTitle(info.ex);
+  }
+
   /// 显示名
   String getShowName(ConversationInfo info) {
     if (info.showName == null || info.showName.isBlank!) {
@@ -323,6 +336,7 @@ class ConversationLogic extends GetxController {
       list = await _request(0);
       this.list.assignAll(list);
       _syncSingleChatIdentityStatus(list);
+      _syncGroupLevelStatus(list);
       if (list.isEmpty || list.length < pageSize) {
         refreshController.loadNoData();
       } else {
@@ -339,6 +353,7 @@ class ConversationLogic extends GetxController {
       list = await _request(this.list.length);
       this.list.addAll(list);
       _syncSingleChatIdentityStatus(list);
+      _syncGroupLevelStatus(list);
     } finally {
       if (list.isEmpty || list.length < pageSize) {
         refreshController.loadNoData();
@@ -391,6 +406,39 @@ class ConversationLogic extends GetxController {
       if (changed) list.refresh();
     } finally {
       _loadingIdentityUsers.removeAll(userIDs);
+    }
+  }
+
+  void _syncGroupLevelStatus(List<ConversationInfo> conversations) async {
+    final groupIDs = conversations
+        .where((info) =>
+            info.isGroupChat && info.groupID != null && info.groupID!.isNotEmpty)
+        .map((info) => info.groupID!)
+        .where((groupID) =>
+            !_groupLevelTitleMap.containsKey(groupID) &&
+            !_loadingGroupLevels.contains(groupID))
+        .toSet()
+        .toList();
+    if (groupIDs.isEmpty) return;
+
+    _loadingGroupLevels.addAll(groupIDs);
+    try {
+      final groups =
+          await OpenIM.iMManager.groupManager.getGroupsInfo(groupIDList: groupIDs);
+      var changed = false;
+      for (final group in groups) {
+        final groupID = group.groupID;
+        if (groupID.isEmpty) continue;
+        final title = UserExUtil.groupLevelTitle(group.ex);
+        if (!_groupLevelTitleMap.containsKey(groupID) ||
+            _groupLevelTitleMap[groupID] != title) {
+          _groupLevelTitleMap[groupID] = title;
+          changed = true;
+        }
+      }
+      if (changed) list.refresh();
+    } finally {
+      _loadingGroupLevels.removeAll(groupIDs);
     }
   }
 

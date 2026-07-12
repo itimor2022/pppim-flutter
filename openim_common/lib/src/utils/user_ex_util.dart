@@ -3,6 +3,16 @@ import 'dart:convert';
 class UserExUtil {
   UserExUtil._();
 
+  static const Map<int, String> _groupLevelTitleMap = {
+    1: '先锋团队',
+    2: '标杆团队',
+    3: '荣耀团队',
+    4: '引领团队',
+    5: '核心团队',
+    6: '卓越贡献团队',
+    7: '卓越领航团队',
+  };
+
   static const String _vipKey = 'vip';
   static const String _prettyKey = 'pretty';
   static const String _levelKey = 'level';
@@ -46,6 +56,10 @@ class UserExUtil {
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value.trim());
     return null;
+  }
+
+  static String? groupLevelTitle(String? ex) {
+    return _groupLevelTitleMap[level(ex)];
   }
 
   static bool allowDoubleDeleteMessage(String? ex) {

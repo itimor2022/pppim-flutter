@@ -176,6 +176,48 @@ class ConversationPage extends StatelessWidget {
                                   ..maxLines = 1
                                   ..overflow = TextOverflow.ellipsis,
                               ),
+                              if (logic.isGroupChat(info) &&
+                                  logic.groupLevelTitleOf(info) != null) ...[
+                                6.horizontalSpace,
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 7.w,
+                                    vertical: 2.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFFF1F3),
+                                        Color(0xFFFFD9DF),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(10.r),
+                                    border: Border.all(
+                                      color: const Color(0xFFFF6B7A),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.whatshot_rounded,
+                                        size: 10.sp,
+                                        color: const Color(0xFFC62839),
+                                      ),
+                                      2.horizontalSpace,
+                                      (logic.groupLevelTitleOf(info) ?? '')
+                                          .toText
+                                        ..style = Styles.ts_0C1C33_10sp
+                                            .copyWith(
+                                          color: const Color(0xFFC62839),
+                                          fontWeight: FontWeight.w700,
+                                          height: 1.1,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                               if (logic.isPretty(info) ||
                                   logic.levelOf(info) != null) ...[
                                 6.horizontalSpace,
