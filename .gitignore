@@ -34,3 +34,6 @@ ios/Flutter/ephemeral/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/.symlinks/
+android/app/proguard/mapping.txt
+android/app/proguard/seeds.txt
+android/app/proguard/unused.txt
