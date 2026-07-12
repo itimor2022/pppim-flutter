@@ -165,6 +165,12 @@ class ConversationLogic extends GetxController {
         return '';
       }
 
+      if (info.isGroupChat &&
+          info.latestMsg!.contentType ==
+              MessageType.memberKickedNotification) {
+        return '';
+      }
+
       final text = IMUtils.parseNtf(info.latestMsg!, isConversation: true);
       if (text != null) return text;
       if (info.isSingleChat ||
