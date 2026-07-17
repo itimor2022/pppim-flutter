@@ -16,6 +16,15 @@ class ChatPage extends StatelessWidget {
 
   ChatPage({super.key});
 
+  Widget? _buildIdentityBadge({int? level, required bool isPretty}) {
+    if (!isPretty && level == null) return null;
+    return UserIdentityBadges(
+      compact: true,
+      level: level,
+      isPretty: isPretty,
+    );
+  }
+
   Widget _buildItemView(Message message) => ChatItemView(
         key: logic.itemKey(message),
         // isBubbleMsg: logic.showBubbleBg(message),
@@ -36,8 +45,16 @@ class ChatPage extends StatelessWidget {
         isPlayingSound: logic.isPlaySound(message),
         showLongPressMenu: !logic.isMuted && !logic.isInvalidGroup,
         canReEdit: logic.canEditMessage(message),
+        leftTopWidget: _buildIdentityBadge(
+          level: logic.levelOfMessageSender(message),
+          isPretty: logic.isPrettyMessageSender(message),
+        ),
         leftNickname: logic.getNewestNickname(message),
         leftFaceUrl: logic.getNewestFaceURL(message),
+        rightTopWidget: _buildIdentityBadge(
+          level: logic.currentUserLevel(),
+          isPretty: logic.currentUserIsPretty(),
+        ),
         rightNickname: OpenIM.iMManager.userInfo.nickname,
         rightFaceUrl: OpenIM.iMManager.userInfo.faceURL,
         showLeftNickname: !logic.isSingleChat,

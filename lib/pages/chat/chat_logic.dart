@@ -86,6 +86,10 @@ class ChatLogic extends GetxController {
   final scaleFactor = Config.textScaleFactor.obs;
   final background = "".obs;
   final memberUpdateInfoMap = <String, GroupMembersInfo>{};
+  final _groupUserLevelMap = <String, int?>{};
+  final _groupUserPrettyMap = <String, bool>{};
+  final _loadingGroupMemberUsers = <String>{};
+  final _loadingIdentityUsers = <String>{};
   final groupMessageReadMembers = <String, List<String>>{};
   final groupMutedStatus = 0.obs;
   final groupMemberRoleLevel = 1.obs;
@@ -223,7 +227,8 @@ class ChatLogic extends GetxController {
     searchMessage = arguments['searchMessage'];
     nickname.value = conversationInfo.showName ?? '';
     if (isGroupChat) {
-      groupLevelTitle.value = UserExUtil.groupLevelTitle(conversationInfo.ex) ?? '';
+      groupLevelTitle.value =
+          UserExUtil.groupLevelTitle(conversationInfo.ex) ?? '';
     }
     faceUrl.value = conversationInfo.faceURL ?? '';
     _clearUnreadCount();
@@ -243,6 +248,8 @@ class ChatLogic extends GetxController {
         if (_handleGroupPinnedSyncMessage(message)) {
           return;
         }
+        _syncGroupMemberInfo([message]);
+        _syncGroupUserIdentity([message]);
         // 对方正在输入消息
         if (message.contentType == MessageType.typing) {
           if (message.typingElem?.msgTips == 'yes') {
@@ -2020,7 +2027,7 @@ class ChatLogic extends GetxController {
         groupIDList: [groupID!],
       );
       groupInfo = list.firstOrNull;
-        groupLevelTitle.value = UserExUtil.groupLevelTitle(groupInfo?.ex) ??
+      groupLevelTitle.value = UserExUtil.groupLevelTitle(groupInfo?.ex) ??
           UserExUtil.groupLevelTitle(conversationInfo.ex) ??
           '';
       groupOwnerID = groupInfo?.ownerUserID;
@@ -2245,9 +2252,100 @@ class ChatLogic extends GetxController {
     return memberUpdateInfoMap[message.sendID]?.nickname;
   }
 
+  int? levelOfMessageSender(Message message) {
+    if (!isGroupChat) return null;
+    return _groupUserLevelMap[message.sendID];
+  }
+
+  bool isPrettyMessageSender(Message message) {
+    if (!isGroupChat) return false;
+    return _groupUserPrettyMap[message.sendID] == true;
+  }
+
+  int? currentUserLevel() {
+    if (!isGroupChat) return null;
+    return _groupUserLevelMap[OpenIM.iMManager.userID] ??
+        UserExUtil.level(imLogic.userInfo.value.ex);
+  }
+
+  bool currentUserIsPretty() {
+    if (!isGroupChat) return false;
+    return _groupUserPrettyMap[OpenIM.iMManager.userID] == true ||
+        UserExUtil.isPretty(imLogic.userInfo.value.ex);
+  }
+
   String? getNewestFaceURL(Message message) {
     if (isSingleChat) return faceUrl.value;
     return memberUpdateInfoMap[message.sendID]?.faceURL;
+  }
+
+  void _syncGroupMemberInfo(Iterable<Message> messages) async {
+    if (!isGroupChat || groupID == null) return;
+
+    final userIDs = messages
+        .map((message) => message.sendID)
+        .whereType<String>()
+        .where((userID) =>
+            userID.isNotEmpty &&
+            !memberUpdateInfoMap.containsKey(userID) &&
+            !_loadingGroupMemberUsers.contains(userID))
+        .toSet()
+        .toList();
+    if (userIDs.isEmpty) return;
+
+    _loadingGroupMemberUsers.addAll(userIDs);
+    try {
+      final members = await OpenIM.iMManager.groupManager.getGroupMembersInfo(
+        groupID: groupID!,
+        userIDList: userIDs,
+      );
+      _putMemberInfo(members);
+    } finally {
+      _loadingGroupMemberUsers.removeAll(userIDs);
+    }
+  }
+
+  void _syncGroupUserIdentity(Iterable<Message> messages) async {
+    if (!isGroupChat) return;
+
+    final userIDs = messages
+        .map((message) => message.sendID)
+        .whereType<String>()
+        .where((userID) =>
+            userID.isNotEmpty &&
+            !_groupUserLevelMap.containsKey(userID) &&
+            !_groupUserPrettyMap.containsKey(userID) &&
+            !_loadingIdentityUsers.contains(userID))
+        .toSet()
+        .toList();
+    if (userIDs.isEmpty) return;
+
+    _loadingIdentityUsers.addAll(userIDs);
+    try {
+      final users =
+          await OpenIM.iMManager.userManager.getUsersInfoWithCache(userIDs);
+      var changed = false;
+      for (final user in users) {
+        final ex = user.friendInfo?.ex ?? user.publicInfo?.ex;
+        final level = UserExUtil.level(ex);
+        final isPretty = UserExUtil.isPretty(ex);
+        final userID = user.userID;
+        if (userID.isEmpty) continue;
+        if (_groupUserLevelMap[userID] != level) {
+          _groupUserLevelMap[userID] = level;
+          changed = true;
+        }
+        if (_groupUserPrettyMap[userID] != isPretty) {
+          _groupUserPrettyMap[userID] = isPretty;
+          changed = true;
+        }
+      }
+      if (changed) {
+        messageList.refresh();
+      }
+    } finally {
+      _loadingIdentityUsers.removeAll(userIDs);
+    }
   }
 
   /// 存在未读的公告
@@ -2849,6 +2947,8 @@ class ChatLogic extends GetxController {
         return false;
       _searchMediaMessage();
       list = result.messageList!;
+      _syncGroupMemberInfo(list);
+      _syncGroupUserIdentity(list);
       lastMinSeq = result.lastMinSeq;
       if (_isFirstLoad) {
         _isFirstLoad = false;

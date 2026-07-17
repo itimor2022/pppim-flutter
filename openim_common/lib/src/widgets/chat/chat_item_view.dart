@@ -74,8 +74,10 @@ class ChatItemView extends StatefulWidget {
     this.sendProgressSubject,
     this.visibilityChange,
     this.timelineStr,
+    this.leftTopWidget,
     this.leftNickname,
     this.leftFaceUrl,
+    this.rightTopWidget,
     this.rightNickname,
     this.rightFaceUrl,
     required this.message,
@@ -142,8 +144,10 @@ class ChatItemView extends StatefulWidget {
   // final Subject<MsgStreamEv<double>> downloadProgressSubject;
   final ItemVisibilityChange? visibilityChange;
   final String? timelineStr;
+  final Widget? leftTopWidget;
   final String? leftNickname;
   final String? leftFaceUrl;
+  final Widget? rightTopWidget;
   final String? rightNickname;
   final String? rightFaceUrl;
   final Message message;
@@ -454,8 +458,10 @@ class _ChatItemViewState extends State<ChatItemView> {
     return child = ChatItemContainer(
       id: _message.clientMsgID!,
       isISend: _isISend,
+      leftTopWidget: widget.leftTopWidget,
       leftNickname: senderNickname,
       leftFaceUrl: senderFaceURL,
+      rightTopWidget: widget.rightTopWidget,
       rightNickname: widget.rightNickname ?? OpenIM.iMManager.userInfo.nickname,
       rightFaceUrl: widget.rightFaceUrl ?? OpenIM.iMManager.userInfo.faceURL,
       showLeftNickname: widget.showLeftNickname,

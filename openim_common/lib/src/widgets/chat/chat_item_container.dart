@@ -8,6 +8,8 @@ class ChatItemContainer extends StatelessWidget {
     required this.id,
     this.leftFaceUrl,
     this.rightFaceUrl,
+    this.leftTopWidget,
+    this.rightTopWidget,
     this.leftNickname,
     this.rightNickname,
     this.timelineStr,
@@ -42,6 +44,8 @@ class ChatItemContainer extends StatelessWidget {
   final String id;
   final String? leftFaceUrl;
   final String? rightFaceUrl;
+  final Widget? leftTopWidget;
+  final Widget? rightTopWidget;
   final String? leftNickname;
   final String? rightNickname;
   final String? timelineStr;
@@ -144,6 +148,7 @@ class ChatItemContainer extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               ChatNicknameView(
+                topWidget: showLeftNickname ? leftTopWidget : null,
                 nickname: showLeftNickname ? leftNickname : null,
                 timeStr: timeStr,
               ),
@@ -179,8 +184,10 @@ class ChatItemContainer extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               ChatNicknameView(
+                topWidget: showRightNickname ? rightTopWidget : null,
                 nickname: showRightNickname ? rightNickname : null,
                 timeStr: timeStr,
+                alignEnd: true,
               ),
               // timeStr.toText..style = Styles.ts_8E9AB0_12sp,
               4.verticalSpace,
