@@ -116,14 +116,12 @@ class MinePage extends StatelessWidget {
                       ),
                       if (UserExUtil.isPretty(
                               logic.imLogic.userInfo.value.ex) ||
-                          logic.imLogic.userInfo.value.level != null ||
                           UserExUtil.level(
                             logic.imLogic.userInfo.value.ex) !=
                               null) ...[
                         6.horizontalSpace,
                         UserIdentityBadges(
                           ex: logic.imLogic.userInfo.value.ex,
-                          level: logic.imLogic.userInfo.value.level,
                           compact: true,
                         ),
                       ],

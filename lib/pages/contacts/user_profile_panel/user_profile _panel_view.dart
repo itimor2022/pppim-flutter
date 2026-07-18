@@ -113,13 +113,11 @@ class UserProfilePanelPage extends StatelessWidget {
                           ..overflow = TextOverflow.ellipsis,
                       ),
                       if (UserExUtil.isPretty(logic.userInfo.value.ex) ||
-                          logic.userInfo.value.level != null ||
                           UserExUtil.level(logic.userInfo.value.ex) != null) ...[
                         6.horizontalSpace,
                         Flexible(
                           child: UserIdentityBadges(
                             ex: logic.userInfo.value.ex,
-                            level: logic.userInfo.value.level,
                           ),
                         ),
                       ],
