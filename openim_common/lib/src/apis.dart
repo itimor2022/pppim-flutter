@@ -144,6 +144,7 @@ class Apis {
     int? allowAddFriend,
     int? allowBeep,
     int? allowVibration,
+    String? ex,
   }) async {
     Map<String, dynamic> param = {'userID': userID};
     void put(String key, dynamic value) {
@@ -165,6 +166,7 @@ class Apis {
     put('allowAddFriend', allowAddFriend);
     put('allowBeep', allowBeep);
     put('allowVibration', allowVibration);
+    put('ex', ex);
 
     return HttpUtil.post(
       Urls.updateUserInfo,

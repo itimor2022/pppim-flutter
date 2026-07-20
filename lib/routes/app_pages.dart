@@ -155,6 +155,7 @@ import '../../RedPacket/ResetPayPasswordController.dart';
 import '../../RedPacket/RedPacketRecordListPage.dart';
 import '../../RedPacket/WalletRecordPage.dart';
 import '../../RedPacket/withdraw_page.dart';
+import '../../RedPacket/withdraw_method_add_page.dart';
 
 part 'app_routes.dart';
 
@@ -577,6 +578,10 @@ class AppPages {
     GetPage(
       name: AppRoutes.withdraw,
       page: () => const WithdrawPage(),
+    ),
+    GetPage(
+      name: AppRoutes.withdrawMethodAdd,
+      page: () => const WithdrawMethodAddPage(),
     ),
   ];
 }

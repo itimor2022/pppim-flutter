@@ -83,6 +83,7 @@ abstract class AppRoutes {
   static const redPacketRecordList = '/red_packet_record_list';
   static const walletRecords = '/wallet_records';
   static const withdraw = '/withdraw';
+  static const withdrawMethodAdd = '/withdraw_method_add';
 }
 
 extension RoutesExtension on String {
