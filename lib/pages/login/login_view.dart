@@ -57,20 +57,6 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                         10.verticalSpace,
-                        // Row(
-                        //   children: [
-                        //     StrRes.forgetPassword.toText
-                        //       ..style = Styles.ts_8E9AB0_12sp
-                        //       ..onTap = _showForgetPasswordBottomSheet,
-                        //     const Spacer(),
-                        //     (logic.isPasswordLogin.value
-                        //             ? StrRes.verificationCodeLogin
-                        //             : StrRes.passwordLogin)
-                        //         .toText
-                        //       ..style = Styles.ts_0089FF_12sp
-                        //       ..onTap = logic.togglePasswordType,
-                        //   ],
-                        // ),
                         46.verticalSpace,
                         Button(
                           text: StrRes.login,
@@ -78,9 +64,67 @@ class LoginPage extends StatelessWidget {
                           onTap: logic.login,
                         ),
                         12.verticalSpace,
-                        '切换线路'.toText
-                          ..style = Styles.ts_0089FF_14sp
-                          ..onTap = logic.switchLine,
+                        // 切换线路和在线客服左右分开
+                        Row(
+                          children: [
+                            // 蓝色边框按钮 - 切换线路
+                            InkWell(
+                              onTap: logic.switchLine,
+                              borderRadius: BorderRadius.circular(999),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 8.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(
+                                    color: const Color(0xFF0089FF),
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  '切换线路',
+                                  style: TextStyle(
+                                    color: const Color(0xFF0089FF),
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            // 红色边框按钮 - 在线客服
+                            InkWell(
+                              onTap: logic.openCustomerService,
+                              borderRadius: BorderRadius.circular(999),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16.w,
+                                  vertical: 8.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(
+                                    color: const Color(0xFFE57373),
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  '在线客服',
+                                  style: TextStyle(
+                                    color: const Color(0xFFB42318),
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        8.verticalSpace,
                       ],
                     )),
               ),
@@ -88,11 +132,11 @@ class LoginPage extends StatelessWidget {
               RichText(
                 text: TextSpan(
                   text: StrRes.noAccountYet,
-                  style: Styles.ts_8E9AB0_12sp,
+                  style: Styles.ts_8E9AB0_14sp,
                   children: [
                     TextSpan(
                       text: StrRes.registerNow,
-                      style: Styles.ts_0089FF_12sp,
+                      style: Styles.ts_0089FF_14sp,
                       recognizer: TapGestureRecognizer()
                         ..onTap = logic.registerNow,
                     )

@@ -4,7 +4,9 @@ import 'package:openim/pages/mine/server_config/server_config_binding.dart';
 import 'package:openim/pages/mine/server_config/server_config_view.dart';
 import 'package:openim_common/openim_common.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/controller/app_controller.dart';
 import '../../core/controller/im_controller.dart';
 import '../../core/controller/push_controller.dart';
 import '../../routes/app_navigator.dart';
@@ -55,6 +57,7 @@ extension LoginTypeExt on LoginType {
 class LoginLogic extends GetxController {
   final imLogic = Get.find<IMController>();
   final pushLogic = Get.find<PushController>();
+  final appLogic = Get.find<AppController>();
   final phoneCtrl = TextEditingController();
   final pwdCtrl = TextEditingController();
   final verificationCodeCtrl = TextEditingController();
@@ -207,6 +210,52 @@ class LoginLogic extends GetxController {
         () => ServerConfigPage(),
         binding: ServerConfigBinding(),
       );
+
+  String? _getCustomerServiceUrl(Map<String, dynamic> map) {
+    final candidates = [
+      map['discoverPageURL'],
+      map['discover_page_url'],
+      map['discoverPageUrl'],
+    ];
+
+    for (final value in candidates) {
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
+  Future<void> openCustomerService() async {
+    var serviceUrl = _getCustomerServiceUrl(appLogic.clientConfigMap);
+
+    if (serviceUrl == null || serviceUrl.isEmpty) {
+      try {
+        final map = await appLogic.queryClientConfig();
+        serviceUrl = _getCustomerServiceUrl(map);
+      } catch (e) {
+        Logger.print('query client config error: $e');
+      }
+    }
+
+    if (serviceUrl == null || serviceUrl.isEmpty) {
+      IMViews.showToast('暂无客服地址');
+      return;
+    }
+
+    final uri = Uri.tryParse(serviceUrl);
+    final targetUri =
+        uri?.hasScheme == true ? uri : Uri.tryParse('https://$serviceUrl');
+
+    if (targetUri == null) {
+      IMViews.showToast('客服地址格式不正确');
+      return;
+    }
+
+    if (!await launchUrl(targetUri, mode: LaunchMode.externalApplication)) {
+      IMViews.showToast('无法打开客服页面');
+    }
+  }
 
   Future<void> switchLine() async {
     try {
