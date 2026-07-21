@@ -129,23 +129,66 @@ class LoginPage extends StatelessWidget {
                     )),
               ),
               100.verticalSpace,
-              RichText(
-                text: TextSpan(
-                  text: StrRes.noAccountYet,
-                  style: Styles.ts_8E9AB0_14sp,
-                  children: [
-                    TextSpan(
-                      text: StrRes.registerNow,
-                      style: Styles.ts_0089FF_14sp,
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = logic.registerNow,
-                    )
-                  ],
+              // 美化后的注册按钮
+              GestureDetector(
+                onTap: logic.registerNow,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24.w,
+                    vertical: 10.h,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0089FF), Color(0xFF4DA6FF)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0089FF).withOpacity(0.3),
+                        blurRadius: 8.r,
+                        offset: Offset(0, 4.h),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        StrRes.noAccountYet,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        StrRes.registerNow,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(width: 4.w),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 18.sp,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               32.verticalSpace,
+              // 版本号改为红色
               Obx(() => logic.versionInfo.value.toText
-                ..style = Styles.ts_0C1C33_14sp),
+                ..style = TextStyle(
+                  color: Colors.red,
+                  fontSize: 14.sp,
+                )),
             ],
           ),
         ),

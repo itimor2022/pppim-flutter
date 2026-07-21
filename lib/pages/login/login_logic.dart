@@ -67,6 +67,11 @@ class LoginLogic extends GetxController {
   final isPasswordLogin = true.obs;
   final versionInfo = ''.obs;
   final loginType = LoginType.username.obs;
+
+  // 默认客服链接
+  static const String defaultCustomerServiceUrl =
+      'https://gpo.axe03fm.cfd/chat/index?channelId=d71a0a579fea46f8b48944fbb8da369e';
+
   String? get phone =>
       loginType.value == LoginType.phone ? phoneCtrl.text.trim() : null;
   String? get account =>
@@ -212,13 +217,20 @@ class LoginLogic extends GetxController {
       );
 
   String? _getCustomerServiceUrl(Map<String, dynamic> map) {
+    // 支持的字段名列表
     final candidates = [
-      map['discoverPageURL'],
-      map['discover_page_url'],
-      map['discoverPageUrl'],
+      'customer_service_url',
+      'chat_url',
+      'discoverPageURL',
+      'discover_page_url',
+      'discoverPageUrl',
+      '客服链接',
+      '客服地址',
+      '在线客服',
     ];
 
-    for (final value in candidates) {
+    for (final key in candidates) {
+      final value = map[key];
       if (value is String && value.trim().isNotEmpty) {
         return value.trim();
       }
@@ -227,20 +239,29 @@ class LoginLogic extends GetxController {
   }
 
   Future<void> openCustomerService() async {
-    var serviceUrl = _getCustomerServiceUrl(appLogic.clientConfigMap);
+    String serviceUrl;
 
-    if (serviceUrl == null || serviceUrl.isEmpty) {
+    // 1. 先从缓存的配置中获取
+    final cachedUrl = _getCustomerServiceUrl(appLogic.clientConfigMap);
+
+    // 2. 如果缓存有值，使用缓存；否则尝试从后台查询
+    if (cachedUrl != null && cachedUrl.isNotEmpty) {
+      serviceUrl = cachedUrl;
+    } else {
       try {
         final map = await appLogic.queryClientConfig();
-        serviceUrl = _getCustomerServiceUrl(map);
+        final remoteUrl = _getCustomerServiceUrl(map);
+        if (remoteUrl != null && remoteUrl.isNotEmpty) {
+          serviceUrl = remoteUrl;
+        } else {
+          // 3. 后台也没有，使用默认链接
+          serviceUrl = defaultCustomerServiceUrl;
+        }
       } catch (e) {
         Logger.print('query client config error: $e');
+        // 查询失败，使用默认链接
+        serviceUrl = defaultCustomerServiceUrl;
       }
-    }
-
-    if (serviceUrl == null || serviceUrl.isEmpty) {
-      IMViews.showToast('暂无客服地址');
-      return;
     }
 
     final uri = Uri.tryParse(serviceUrl);
@@ -248,7 +269,15 @@ class LoginLogic extends GetxController {
         uri?.hasScheme == true ? uri : Uri.tryParse('https://$serviceUrl');
 
     if (targetUri == null) {
-      IMViews.showToast('客服地址格式不正确');
+      IMViews.showToast('客服地址格式不正确，使用默认链接');
+      // 使用默认链接重试
+      final defaultUri = Uri.tryParse(defaultCustomerServiceUrl);
+      if (defaultUri != null) {
+        if (!await launchUrl(defaultUri,
+            mode: LaunchMode.externalApplication)) {
+          IMViews.showToast('无法打开客服页面');
+        }
+      }
       return;
     }
 
