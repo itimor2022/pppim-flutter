@@ -203,8 +203,8 @@ class _WithdrawPageState extends State<WithdrawPage> {
                   onTap: _goAddMethod,
                   child: Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                        horizontal: 16.w, vertical: 16.h),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8F3EC),
                       borderRadius: BorderRadius.circular(20.r),
@@ -233,8 +233,8 @@ class _WithdrawPageState extends State<WithdrawPage> {
                 onTap: _showMethodPicker,
                 child: Container(
                   width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 16.w, vertical: 16.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8F3EC),
                     borderRadius: BorderRadius.circular(20.r),
@@ -351,8 +351,8 @@ class _WithdrawPageState extends State<WithdrawPage> {
   Future<void> _submitWithdraw() async {
     final amountText = _amountCtrl.text.trim();
     final amount = double.tryParse(amountText);
-    if (amount == null || amount < 0.01) {
-      IMViews.showToast('请输入正确金额');
+    if (amount == null || amount < 100) {
+      IMViews.showToast('请输入正确金额，最低提现金额为100元');
       return;
     }
     if (_methods.isEmpty) {

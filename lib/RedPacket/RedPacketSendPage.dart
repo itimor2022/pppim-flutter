@@ -13,6 +13,14 @@ import 'Widgets/CompatibilityWidgets.dart';
 class RedPacketSendPage extends GetView<RedPacketSendController> {
   @override
   Widget build(BuildContext context) {
+    // 页面加载时默认选中拼手气红包（仅当是群聊时）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!controller.isSingle && controller.index.value != 1) {
+        controller.index.value = 1;
+        controller.onNo();
+      }
+    });
+
     return cancelFocusEvent(
       context: context,
       child: Scaffold(
@@ -104,31 +112,31 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 ],
                               )),
                         ),
-                        // InkWell(
-                        //   onTap: () {
-                        //     controller.index.value = 3;
-                        //     controller.onNo();
-                        //   },
-                        //   child: Obx(() => Column(
-                        //         children: [
-                        //           DefaultText(
-                        //             text: "扫雷",
-                        //             textColor: controller.index.value == 3
-                        //                 ? Colors.black
-                        //                 : const Color(0xff939393),
-                        //             fontSize: 16.sp,
-                        //           ),
-                        //           DefaultContainer(
-                        //             margin: EdgeInsets.only(top: 8.w),
-                        //             width: 44.w,
-                        //             height: 2.w,
-                        //             color: controller.index.value == 3
-                        //                 ? Colors.black
-                        //                 : Colors.transparent,
-                        //           ),
-                        //         ],
-                        //       )),
-                        // ),
+                        InkWell(
+                          onTap: () {
+                            controller.index.value = 3;
+                            controller.onNo();
+                          },
+                          child: Obx(() => Column(
+                                children: [
+                                  DefaultText(
+                                    text: "扫雷",
+                                    textColor: controller.index.value == 3
+                                        ? Colors.black
+                                        : const Color(0xff939393),
+                                    fontSize: 16.sp,
+                                  ),
+                                  DefaultContainer(
+                                    margin: EdgeInsets.only(top: 8.w),
+                                    width: 44.w,
+                                    height: 2.w,
+                                    color: controller.index.value == 3
+                                        ? Colors.black
+                                        : Colors.transparent,
+                                  ),
+                                ],
+                              )),
+                        ),
                       ],
                     ),
                   ),
@@ -139,7 +147,7 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                     () => Column(
                       children: [
                         /// 如果是群聊 并且 (普通红包 或者 拼手气）
-                        /// 红包数量
+                        /// 红包数量 (最大500个)
                         if ((controller.index.value == 0 ||
                                 controller.index.value == 1) &&
                             !controller.isSingle)
@@ -150,30 +158,45 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 const TextInputType.numberWithOptions(
                                     decimal: true),
                             inputFormatters: [
-                              PrecisionLimitFormatter1(
-                                  1, controller.redPacketQuantityLimit),
+                              // 限制整数，最大500
                               FilteringTextInputFormatter.allow(
-                                  RegExp('[0-9.,]+'))
+                                  RegExp(r'^\d*$')),
+                              LengthLimitingTextInputFormatter(3),
                             ],
                             textController: controller.packetQuantity,
                             onChanged: (p0) {
-                              controller.packetQuantity.text =
-                                  p0.replaceAll('0.', '');
-                              controller.packetQuantity.text =
-                                  p0.replaceAll('.', '');
+                              // 如果输入为空或者为0，清空
+                              if (p0.isEmpty || p0 == "0") {
+                                controller.packetQuantity.text = '';
+                                controller.priceObs.value = '0.00';
+                                return;
+                              }
 
-                              /// 如果是个数变了，扫雷模式下金额通常固定或者有特定系数，这里维持原有 priceObs 更新逻辑
+                              int count = int.tryParse(p0) ?? 0;
+                              // 最大500个
+                              if (count > 500) {
+                                controller.packetQuantity.text = '500';
+                                count = 500;
+                              }
+
+                              /// 普通红包：根据总金额和数量计算单个金额
                               if (controller.index.value == 0 &&
                                   !controller.isSingle) {
                                 if (controller.singlePrice.text.isNotEmpty &&
-                                    controller.singlePrice.text != "" &&
-                                    p0.isNotEmpty &&
-                                    p0 != "") {
-                                  controller.priceObs.value = (double.parse(
-                                              controller.singlePrice.text) *
-                                          double.parse(p0))
-                                      .toString();
+                                    controller.singlePrice.text != "") {
+                                  double totalAmt = double.tryParse(
+                                          controller.singlePrice.text) ??
+                                      0;
+                                  controller.priceObs.value =
+                                      totalAmt.toStringAsFixed(2);
                                 }
+                                return;
+                              }
+
+                              /// 拼手气红包：总金额不变，只更新数量
+                              if (controller.index.value == 1 &&
+                                  !controller.isSingle) {
+                                // 保持总金额不变
                                 return;
                               }
                             },
@@ -333,46 +356,110 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 textController: TextEditingController(
                                     text: "${controller.odds.value} 倍"),
                               ),
+
+                              /// 扫雷单个金额
+                              item(
+                                '单个金额',
+                                textController: controller.singlePrice,
+                                '0.00',
+                                textInputType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                inputFormatters: [
+                                  PrecisionLimitFormatter(2, 200000),
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d*\.?\d{0,2}'))
+                                ],
+                                onChanged: (p0) {
+                                  if (p0.isEmpty) {
+                                    controller.priceObs.value = '0.00';
+                                    controller.updateSweepMineRemark();
+                                    return;
+                                  }
+                                  controller.priceObs.value = p0;
+                                  controller.singlePrice.text = p0;
+                                  controller.updateSweepMineRemark();
+                                },
+                                isIcon: true,
+                              ),
                             ],
                           ),
 
-                        /// 如果是单聊 或者 普通红包 或者 扫雷
-                        /// 单个金额 (扫雷模式下，单个金额由用户输入)
-                        if (controller.index.value == 0 ||
-                            controller.index.value == 3 ||
-                            controller.isSingle)
+                        /// 普通红包（群聊）：显示"总金额"，用户输入总金额
+                        if (controller.index.value == 0 && !controller.isSingle)
                           item(
-                            '单个金额',
+                            '总金额',
                             textController: controller.singlePrice,
-                            '0.000',
+                            '100.00',
                             textInputType:
                                 const TextInputType.numberWithOptions(
                                     decimal: true),
                             inputFormatters: [
-                              PrecisionLimitFormatter(3, 200000),
+                              PrecisionLimitFormatter(2, 200000),
                               FilteringTextInputFormatter.allow(
-                                  RegExp('[0-9.,]+'))
+                                  RegExp(r'^\d*\.?\d{0,2}'))
                             ],
                             onChanged: (p0) {
-                              if (p0 == "") {
+                              if (p0.isEmpty) {
                                 controller.priceObs.value = '0.00';
-                                controller.updateSweepMineRemark();
                                 return;
                               }
 
-                              /// 如果是群聊，并且是普通后红包
-                              if (controller.index.value == 0 &&
-                                  !controller.isSingle) {
-                                controller.priceObs.value = (double.parse(
-                                            controller.packetQuantity.text) *
-                                        double.parse(p0))
-                                    .toString();
-                                return;
-                              }
-
+                              double totalAmt = double.tryParse(p0) ?? 0;
                               controller.priceObs.value = p0;
                               controller.singlePrice.text = p0;
-                              controller.updateSweepMineRemark();
+                            },
+                            isIcon: true,
+                          ),
+
+                        /// 单聊：显示"单个金额"
+                        if (controller.isSingle)
+                          item(
+                            '单个金额',
+                            textController: controller.singlePrice,
+                            '0.00',
+                            textInputType:
+                                const TextInputType.numberWithOptions(
+                                    decimal: true),
+                            inputFormatters: [
+                              PrecisionLimitFormatter(2, 200000),
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*\.?\d{0,2}'))
+                            ],
+                            onChanged: (p0) {
+                              if (p0.isEmpty) {
+                                controller.priceObs.value = '0.00';
+                                return;
+                              }
+                              controller.priceObs.value = p0;
+                              controller.singlePrice.text = p0;
+                            },
+                            isIcon: true,
+                          ),
+
+                        /// 拼手气红包（群聊）：显示"总金额"，最低100元
+                        if (controller.index.value == 1 && !controller.isSingle)
+                          item(
+                            '总金额',
+                            textController: controller.singlePrice,
+                            '100.00',
+                            textInputType:
+                                const TextInputType.numberWithOptions(
+                                    decimal: true),
+                            inputFormatters: [
+                              PrecisionLimitFormatter(2, 200000),
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d*\.?\d{0,2}'))
+                            ],
+                            onChanged: (p0) {
+                              if (p0.isEmpty) {
+                                controller.priceObs.value = '0.00';
+                                return;
+                              }
+
+                              double totalAmt = double.tryParse(p0) ?? 0;
+                              controller.priceObs.value = p0;
+                              controller.singlePrice.text = p0;
                             },
                             isIcon: true,
                           ),
@@ -389,13 +476,11 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 arguments: {
                                   'groupInfo': GroupInfo(
                                     groupID: controller.id!,
-                                    memberCount: 999999, // Avoid null crash
+                                    memberCount: 999999,
                                   ),
                                   'opType': GroupMemberOpType.simpleSelect,
                                 },
                               );
-                              // Note: Return type might differ in openim-demo. Assuming it returns user info.
-                              // If not, this logic will need further adjustment during testing.
                               if (info != null) {
                                 String? uid;
                                 String? nickname;
@@ -428,49 +513,25 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                             enabled: false,
                           ),
 
-                        /// 如果是群聊并且拼手气
-                        /// 总金额
-                        if ((controller.index.value == 1 ||
-                                controller.index.value == 2) &&
-                            !controller.isSingle)
+                        /// 专属红包的金额（群聊）
+                        if (controller.index.value == 2 && !controller.isSingle)
                           item(
-                            '总金额',
+                            '单个金额',
                             textController: controller.singlePrice,
-                            '0.000',
+                            '0.00',
                             textInputType:
                                 const TextInputType.numberWithOptions(
                                     decimal: true),
                             inputFormatters: [
-                              PrecisionLimitFormatter(3, getNuber()),
+                              PrecisionLimitFormatter(2, 200000),
                               FilteringTextInputFormatter.allow(
-                                  RegExp('[0-9.,]+'))
+                                  RegExp(r'^\d*\.?\d{0,2}'))
                             ],
                             onChanged: (p0) {
-                              if (p0 == "") {
-                                controller.priceObs.value = '0.000';
+                              if (p0.isEmpty) {
+                                controller.priceObs.value = '0.00';
                                 return;
                               }
-
-                              /// 如果是群聊，并且是普通后红包
-                              if (controller.index.value == 0 &&
-                                  controller.index.value == 0) {
-                                controller.priceObs.value = (double.parse(
-                                            controller.packetQuantity.text) *
-                                        double.parse(p0))
-                                    .toString();
-                                return;
-                              }
-
-                              /// 如果是群聊，并且是普通后红包
-                              if (controller.index.value == 0 &&
-                                  controller.index.value == 1) {
-                                controller.priceObs.value = (double.parse(
-                                            controller.packetQuantity.text) *
-                                        double.parse(p0))
-                                    .toString();
-                                return;
-                              }
-
                               controller.priceObs.value = p0;
                               controller.singlePrice.text = p0;
                             },
@@ -478,7 +539,8 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                           ),
 
                         Obx(() {
-                          bool isSweepMine = controller.index.value == 3 && !controller.isSingle;
+                          bool isSweepMine = controller.index.value == 3 &&
+                              !controller.isSingle;
                           return Container(
                             margin: EdgeInsets.only(
                               top: 10.w,
@@ -522,7 +584,7 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                             function: () {
                               if (isSweepMineMissingConfig) return;
 
-                              /// 如果是群聊，并且是普通红包
+                              /// 群聊普通红包校验
                               if (controller.index.value == 0 &&
                                   !controller.isSingle) {
                                 if (controller.packetQuantity.text.isEmpty ||
@@ -530,54 +592,83 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                   EasyLoading.showToast("红包数量不能为空");
                                   return;
                                 }
-                                if (double.parse(controller.singlePrice.text) <
-                                    double.parse(
-                                            controller.packetQuantity.text) *
-                                        0.001) {
-                                  EasyLoading.showToast("单个红包数量金额不能小于 0.001");
+                                int count = int.tryParse(
+                                        controller.packetQuantity.text) ??
+                                    0;
+                                if (count > 500) {
+                                  EasyLoading.showToast("红包数量不能超过500个");
+                                  return;
+                                }
+                                if (controller.singlePrice.text.isEmpty ||
+                                    controller.singlePrice.text == "0") {
+                                  EasyLoading.showToast("请填写总金额");
+                                  return;
+                                }
+                                double totalAmt = double.tryParse(
+                                        controller.singlePrice.text) ??
+                                    0;
+                                if (totalAmt < 100) {
+                                  EasyLoading.showToast("红包总金额不能低于100元");
+                                  return;
+                                }
+                                // 确保每个红包至少有0.01元
+                                if (totalAmt / count < 0.01) {
+                                  EasyLoading.showToast(
+                                      "每个红包金额不能低于0.01元，请减少红包数量或增加总金额");
                                   return;
                                 }
                               }
 
-                              /// 如果是拼手气，并且是群聊
+                              /// 拼手气红包校验（群聊）
                               if (controller.index.value == 1 &&
                                   !controller.isSingle) {
-                                if (double.parse(controller.singlePrice.text) <
-                                    double.parse(
-                                            controller.packetQuantity.text) *
-                                        0.001) {
-                                  EasyLoading.showToast("单个红包数量金额不能小于 0.001");
-                                  return;
-                                }
                                 if (controller.packetQuantity.text.isEmpty ||
                                     controller.packetQuantity.text == "0") {
                                   EasyLoading.showToast("红包数量不能为空");
                                   return;
                                 }
-                              }
-
-                              /// 如果是群聊，并且是专属红包
-                              if (controller.index.value == 2 &&
-                                  !controller.isSingle) {
-                                if (controller.groupInfo.text.isEmpty) {
-                                  EasyLoading.showToast("选择对象");
+                                int count = int.tryParse(
+                                        controller.packetQuantity.text) ??
+                                    0;
+                                if (count > 500) {
+                                  EasyLoading.showToast("红包数量不能超过500个");
                                   return;
                                 }
                                 if (controller.singlePrice.text.isEmpty ||
                                     controller.singlePrice.text == "0") {
-                                  EasyLoading.showToast("金额不能为 0");
+                                  EasyLoading.showToast("请填写总金额");
+                                  return;
+                                }
+                                double totalAmt = double.tryParse(
+                                        controller.singlePrice.text) ??
+                                    0;
+                                if (totalAmt < 100) {
+                                  EasyLoading.showToast("红包总金额不能低于100元");
+                                  return;
+                                }
+                                // 确保每个红包至少有0.01元
+                                if (totalAmt / count < 0.01) {
+                                  EasyLoading.showToast(
+                                      "每个红包金额不能低于0.01元，请减少红包数量或增加总金额");
                                   return;
                                 }
                               }
 
-                              /// 金额不能为空
-                              if (controller.singlePrice.text.isEmpty ||
-                                  controller.singlePrice.text == "") {
-                                EasyLoading.showToast("请填写金额");
-                                return;
+                              /// 专属红包校验（群聊）
+                              if (controller.index.value == 2 &&
+                                  !controller.isSingle) {
+                                if (controller.groupInfo.text.isEmpty) {
+                                  EasyLoading.showToast("请选择发送对象");
+                                  return;
+                                }
+                                if (controller.singlePrice.text.isEmpty ||
+                                    controller.singlePrice.text == "0") {
+                                  EasyLoading.showToast("金额不能为0");
+                                  return;
+                                }
                               }
 
-                              /// 如果是单聊
+                              /// 单聊校验
                               if (controller.isSingle) {
                                 if (controller.singlePrice.text.isEmpty ||
                                     controller.singlePrice.text == "0") {
@@ -598,27 +689,31 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 );
                               }
 
-                              /// 如果是群聊，普通红包
+                              /// 群聊普通红包
                               if (controller.index.value == 0 &&
                                   !controller.isSingle) {
+                                int count = int.tryParse(
+                                        controller.packetQuantity.text) ??
+                                    1;
+                                double totalAmt = double.tryParse(
+                                        controller.singlePrice.text) ??
+                                    0;
+                                double singleAmt = totalAmt / count;
                                 controller.sendRedPacketMessage(
                                   redPacketRemarks:
                                       controller.productDescription.text,
                                   exclusiveRemarks:
                                       controller.productDescription.text,
                                   packetType: '1',
-                                  totalAmount:
-                                      double.parse(controller.priceObs.value),
-                                  singleAmount:
-                                      double.parse(controller.singlePrice.text),
-                                  totalPacket:
-                                      int.parse(controller.packetQuantity.text),
+                                  totalAmount: totalAmt,
+                                  singleAmount: singleAmt,
+                                  totalPacket: count,
                                   sendUserId: null,
                                   userImIdOrGroupId: controller.id,
                                 );
                               }
 
-                              /// 如果是群聊，拼手气
+                              /// 群聊拼手气红包
                               if (controller.index.value == 1 &&
                                   !controller.isSingle) {
                                 controller.sendRedPacketMessage(
@@ -636,7 +731,7 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 );
                               }
 
-                              /// 如果是群聊，专属红包
+                              /// 群聊专属红包
                               if (controller.index.value == 2 &&
                                   !controller.isSingle) {
                                 controller.sendRedPacketMessage(
@@ -655,7 +750,7 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                 );
                               }
 
-                              /// 如果是扫雷
+                              /// 扫雷红包
                               if (controller.index.value == 3 &&
                                   !controller.isSingle) {
                                 if (controller.packetQuantity.text.isEmpty ||
@@ -667,7 +762,7 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                   return;
                                 }
                                 if (controller.mineNum.text.isEmpty) {
-                                  EasyLoading.showToast("请输入雷号");
+                                  EasyLoading.showToast("请选择雷号");
                                   return;
                                 }
                                 if (controller.singlePrice.text.isEmpty ||
@@ -708,7 +803,6 @@ class RedPacketSendPage extends GetView<RedPacketSendController> {
                                   }
                                 }
 
-                                // [MOD] 修复：显式计算雷号数量并传递给后端校验
                                 int autoMineCount = 1;
                                 if (controller.mineNum.text.contains('/')) {
                                   autoMineCount =

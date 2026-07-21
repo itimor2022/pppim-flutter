@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:openim_common/openim_common.dart';
+import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 
 class ChatToolBox extends StatelessWidget {
   const ChatToolBox({
@@ -68,16 +69,19 @@ class ChatToolBox extends StatelessWidget {
         icon: "assets/images/red_packet.png",
         onTap: onTapRedPacket,
       ),
-      ToolboxItemInfo(
-        text: "转账",
-        icon: ImageRes.myMoney,
-        onTap: onTapTransfer,
-      ),
+      // ToolboxItemInfo(
+      //   text: "转账",
+      //   icon: ImageRes.myMoney,
+      //   onTap: onTapTransfer,
+      // ),
     ];
 
     final validItems = items.where((element) {
       if (element.text == StrRes.toolboxCall && onTapCall == null) return false;
-      if (element.text == "红包" && onTapRedPacket == null) return false;
+      // 红包：只有在回调存在且用户 ex 中 pretty 为 true 时才显示
+      if (element.text == "红包" &&
+          (onTapRedPacket == null ||
+              !UserExUtil.isPretty(OpenIM.iMManager.userInfo.ex))) return false;
       if (element.text == "转账" && onTapTransfer == null) return false;
       // [MOD] 隐藏位置按钮
       if (element.text == StrRes.toolboxLocation) return false;
