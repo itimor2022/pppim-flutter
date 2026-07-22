@@ -368,6 +368,7 @@ class _LineSwitchSheet extends StatefulWidget {
 
 class _LineSwitchSheetState extends State<_LineSwitchSheet> {
   late List<ConfigLineOption> _displayOptions;
+  final Map<String, ConfigLineOption> _latencyMap = {};
   bool _latencyLoading = true;
 
   @override
@@ -403,14 +404,30 @@ class _LineSwitchSheetState extends State<_LineSwitchSheet> {
     return copied;
   }
 
+  void _updateLatencyResult(ConfigLineOption result) {
+    if (!mounted) return;
+    _latencyMap[result.host] = result;
+    final merged = widget.options
+        .map((option) => _latencyMap[option.host] ?? option)
+        .toList();
+    setState(() {
+      _displayOptions = _orderedOptions(merged);
+    });
+  }
+
   Future<void> _loadLatency() async {
-    final latencies = await Config.fetchManualLineLatencies(
+    await Config.fetchManualLineLatencies(
       widget.options.map((e) => e.host).toList(),
+      onResult: _updateLatencyResult,
     );
     if (!mounted) return;
     setState(() {
       _latencyLoading = false;
-      _displayOptions = _orderedOptions(latencies);
+      _displayOptions = _orderedOptions(
+        widget.options
+            .map((option) => _latencyMap[option.host] ?? option)
+            .toList(),
+      );
     });
   }
 

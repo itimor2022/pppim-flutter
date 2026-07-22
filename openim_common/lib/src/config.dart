@@ -428,13 +428,36 @@ class Config {
         .toList();
   }
 
-  /// 后台测速：仅用于弹窗内更新延迟展示，不阻塞弹窗打开。
+  /// 后台测速：每完成一条就回调一次，便于界面实时刷新。
   static Future<List<ConfigLineOption>> fetchManualLineLatencies(
-    List<String> hosts,
-  ) async {
+    List<String> hosts, {
+    void Function(ConfigLineOption result)? onResult,
+  }) async {
     final candidates = _dedupeHosts(hosts);
+    if (candidates.isEmpty) {
+      return [];
+    }
 
-    final results = await _runLimited(candidates, 8, _testHost);
+    final futures = candidates
+        .map(
+          (host) => _testHost(host).then(
+            (result) => _PendingHostResult(host: host, result: result),
+          ),
+        )
+        .toList();
+
+    final results = <_HostResult>[];
+    await for (final item in Stream.fromFutures(futures)) {
+      results.add(item.result);
+      onResult?.call(
+        ConfigLineOption(
+          host: item.host,
+          success: item.result.success,
+          duration: item.result.success ? item.result.duration : -1,
+        ),
+      );
+    }
+
     results.sort((a, b) {
       if (a.success != b.success) {
         return a.success ? -1 : 1;
@@ -611,6 +634,13 @@ class _HostResult {
   final int duration;
   _HostResult(
       {required this.host, required this.success, required this.duration});
+}
+
+class _PendingHostResult {
+  final String host;
+  final _HostResult result;
+
+  const _PendingHostResult({required this.host, required this.result});
 }
 
 class ConfigLineOption {
