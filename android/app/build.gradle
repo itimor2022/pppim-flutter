@@ -25,7 +25,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace 'io.idouyin.qaqchat100'
+    namespace 'io.idouyin.aoachat121'
     compileSdkVersion 34
     ndkVersion flutter.ndkVersion
 
@@ -39,7 +39,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "io.idouyin.qaqchat100"
+        applicationId "io.idouyin.aoachat121"
         minSdkVersion 24
         targetSdkVersion 30
         versionCode flutterVersionCode.toInteger()
