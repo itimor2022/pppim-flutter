@@ -17,12 +17,14 @@ class Config {
 
   /// ⭐ 远程线路配置（OSS）
   static const String _configUrl =
-      "https://d2pvzx7xdvbqsq.cloudfront.net/im/qaq.txt";
+      "https://d2pvzx7xdvbqsq.cloudfront.net/im/aoa.txt";
 
   /// ⭐ 国内 DNS TXT 配置域名列表
   static const List<String> _dnsConfigDomains = [
-    "cfg.aopwx.top",
-    "cfg.168773a.cfd",
+    "cfg.nhs1.top",
+    "cfg.tya2.cyou",
+    "cfg.nms1.icu",
+    "cfg.xhk1.shop",
   ];
 
   /// 国内 DoH 服务（优先级从高到低）

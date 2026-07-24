@@ -25,7 +25,7 @@ echo ""
 APK_DIR="build/app/outputs/flutter-apk"
 
 # ================== ⭐ 输出文件名带版本号 ==================
-OUTPUT_NAME="/Users/ma/data/apk/无界_v${VERSION}.apk"
+OUTPUT_NAME="/Users/ma/data/apk/三北通_v${VERSION}.apk"
 
 # 复制并重命名
 if [ -f "$APK_DIR/app-release.apk" ]; then
