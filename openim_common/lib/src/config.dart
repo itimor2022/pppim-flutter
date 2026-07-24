@@ -13,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 
 class Config {
   /// ⭐ 默认兜底域名
-  static const String _defaultHost = "https://xs.szim1.shop";
+  static const String _defaultHost = "https://www.sbtn.shop";
 
   /// ⭐ 远程线路配置（OSS）
   static const String _configUrl =

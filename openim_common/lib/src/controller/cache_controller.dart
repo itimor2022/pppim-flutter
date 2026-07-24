@@ -122,4 +122,20 @@ class CacheController extends GetxController {
     callRecordBox = await Hive.openBox<List>('callRecords');
     super.onInit();
   }
+
+  /// 清理表情收藏
+  Future<void> clearFavoriteEmoji() async {
+    favoriteList.clear();
+    await favoriteBox?.delete(userID);
+  }
+
+  /// 清理通话记录
+  Future<void> clearCallRecords() async {
+    callRecordList.clear();
+    await callRecordBox?.delete(userID);
+  }
+
+  /// 获取 Hive 缓存数量（用于估算）
+  int getFavoriteCount() => favoriteList.length;
+  int getCallRecordCount() => callRecordList.length;
 }

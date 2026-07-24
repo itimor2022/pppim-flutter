@@ -130,6 +130,8 @@ import '../pages/mine/my_qrcode/my_qrcode_binding.dart';
 import '../pages/mine/my_qrcode/my_qrcode_view.dart';
 import '../pages/mine/unlock_setup/unlock_setup_binding.dart';
 import '../pages/mine/unlock_setup/unlock_setup_view.dart';
+import '../pages/mine/storage_manage/storage_manage_binding.dart';
+import '../pages/mine/storage_manage/storage_manage_view.dart';
 import '../pages/register/register_binding.dart';
 import '../pages/register/register_view.dart';
 import '../pages/register/set_password/set_password_binding.dart';
@@ -302,6 +304,11 @@ class AppPages {
       name: AppRoutes.aboutUs,
       page: () => AboutUsPage(),
       binding: AboutUsBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.storageManage,
+      page: () => StorageManagePage(),
+      binding: StorageManageBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.setBackgroundImage,
