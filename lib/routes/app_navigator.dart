@@ -286,12 +286,13 @@ class AppNavigator {
         'message': message,
       });
 
-  static startGroupChatSetup({
+  static Future<dynamic> startGroupChatSetup({
     required ConversationInfo conversationInfo,
-  }) =>
-      Get.toNamed(AppRoutes.groupChatSetup, arguments: {
-        'conversationInfo': conversationInfo,
-      });
+  }) async {
+    return await Get.toNamed(AppRoutes.groupChatSetup, arguments: {
+      'conversationInfo': conversationInfo,
+    });
+  }
 
   static startGroupManage({
     required GroupInfo groupInfo,

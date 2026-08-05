@@ -450,12 +450,19 @@ class GroupSetupLogic extends GetxController {
       rightText: StrRes.clearAll,
     ));
     if (confirm == true) {
-      await OpenIM.iMManager.conversationManager
-          .clearConversationAndDeleteAllMsg(
-        conversationID: conversationID,
-      );
-      chatLogic.clearAllMessage();
-      IMViews.showToast(StrRes.clearSuccessfully);
+      try {
+        await LoadingView.singleton.wrap(
+          asyncFunction: () => OpenIM.iMManager.conversationManager
+              .clearConversationAndDeleteAllMsg(
+            conversationID: conversationID,
+          ),
+        );
+        IMViews.showToast(StrRes.clearSuccessfully);
+        Get.back(result: 'clearHistory');
+      } catch (e) {
+        print('clearChatHistory error: $e');
+        IMViews.showToast('清空失败');
+      }
     }
   }
 

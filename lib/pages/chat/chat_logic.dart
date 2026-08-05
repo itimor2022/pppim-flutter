@@ -504,9 +504,18 @@ class ChatLogic extends GetxController {
     });
   }
 
-  void chatSetup() => isSingleChat
-      ? AppNavigator.startChatSetup(conversationInfo: conversationInfo)
-      : AppNavigator.startGroupChatSetup(conversationInfo: conversationInfo);
+  void chatSetup() async {
+    if (isSingleChat) {
+      AppNavigator.startChatSetup(conversationInfo: conversationInfo);
+    } else {
+      final result = await AppNavigator.startGroupChatSetup(
+        conversationInfo: conversationInfo,
+      );
+      if (result == 'clearHistory') {
+        clearAllMessage();
+      }
+    }
+  }
 
   void clearCurAtMap() {
     curMsgAtUser.removeWhere((uid) => !inputCtrl.text.contains('@$uid '));
