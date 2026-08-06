@@ -347,9 +347,9 @@ class LoginLogic extends GetxController {
   void getPackageInfo() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final version = packageInfo.version;
-    final appName = packageInfo.appName;
+    // final appName = packageInfo.appName;
 
-    versionInfo.value = '$appName $version';
+    versionInfo.value = 'v$version';
   }
 }
 

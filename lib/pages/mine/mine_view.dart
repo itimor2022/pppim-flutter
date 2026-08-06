@@ -73,7 +73,7 @@ class MinePage extends StatelessWidget {
               isBottomRadius: true,
             ),
             22.verticalSpace,
-            Obx(() => '${logic.appName.value} ${logic.version.value}'.toText
+            Obx(() => 'v${logic.version.value}'.toText
               ..style = Styles.ts_8E9AB0_12sp),
             20.verticalSpace,
           ],
@@ -116,8 +116,7 @@ class MinePage extends StatelessWidget {
                       ),
                       if (UserExUtil.isPretty(
                               logic.imLogic.userInfo.value.ex) ||
-                          UserExUtil.level(
-                            logic.imLogic.userInfo.value.ex) !=
+                          UserExUtil.level(logic.imLogic.userInfo.value.ex) !=
                               null) ...[
                         6.horizontalSpace,
                         UserIdentityBadges(
