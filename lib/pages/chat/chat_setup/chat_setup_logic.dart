@@ -244,14 +244,18 @@ class ChatSetupLogic extends GetxController {
       rightText: StrRes.clearAll,
     ));
     if (confirm == true) {
-      await LoadingView.singleton.wrap(
-        asyncFunction: () => OpenIM.iMManager.conversationManager
-            .clearConversationAndDeleteAllMsg(
-          conversationID: conversationID,
-        ),
-      );
+      // 先清空本地UI，让用户立即看到清空效果
       chatLogic.clearAllMessage();
       IMViews.showToast(StrRes.clearSuccessfully);
+      
+      // 在后台异步删除服务器消息，不阻塞UI
+      OpenIM.iMManager.conversationManager
+          .clearConversationAndDeleteAllMsg(
+        conversationID: conversationID,
+      ).catchError((error) {
+        // 如果删除失败，记录错误但不影响用户体验
+        print('清空服务器消息失败: $error');
+      });
     }
   }
 
