@@ -84,6 +84,7 @@ abstract class AppRoutes {
   static const walletRecords = '/wallet_records';
   static const withdraw = '/withdraw';
   static const withdrawMethodAdd = '/withdraw_method_add';
+  static const storageManage = '/storage_manage';
 }
 
 extension RoutesExtension on String {

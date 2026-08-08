@@ -33,6 +33,8 @@ class MineLogic extends GetxController {
 
   void aboutUs() => AppNavigator.startAboutUs();
 
+  void storageManage() => Get.toNamed(AppRoutes.storageManage);
+  
   void walletBalance() => Get.toNamed(AppRoutes.walletBalance);
 
   void signIn() => AppNavigator.startSignIn();

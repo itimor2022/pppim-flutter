@@ -385,6 +385,122 @@ class IMUtils {
     }
     return path;
   }
+  
+  /// 计算文件夹大小
+  static Future<int> getDirectorySize(Directory dir) async {
+    int totalSize = 0;
+    try {
+      if (await dir.exists()) {
+        await for (FileSystemEntity entity in dir.list(recursive: true)) {
+          if (entity is File) {
+            totalSize += await entity.length();
+          }
+        }
+      }
+    } catch (e) {
+      Logger.print('Error getting directory size: $e');
+    }
+    return totalSize;
+  }
+
+  /// 格式化文件大小
+  static String formatFileSize(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    int i = (bytes.bitLength - 1) ~/ 10;
+    return '${(bytes / (1 << (i * 10))).toStringAsFixed(2)} ${suffixes[i]}';
+  }
+
+  /// 清理临时目录
+  static Future<int> clearTempFiles() async {
+    int clearedSize = 0;
+    try {
+      final tempDirs = ['pic', 'video', 'apk', 'voice'];
+      for (String dirName in tempDirs) {
+        final dirPath = await createTempDir(dir: dirName);
+        final dir = Directory(dirPath);
+        if (await dir.exists()) {
+          clearedSize += await getDirectorySize(dir);
+          await dir.delete(recursive: true);
+          await dir.create(recursive: true);
+        }
+      }
+    } catch (e) {
+      Logger.print('Error clearing temp files: $e');
+    }
+    return clearedSize;
+  }
+
+  /// 清理下载文件
+  static Future<int> clearDownloadFiles() async {
+    int clearedSize = 0;
+    try {
+      final downloadDir = await getDownloadFileDir();
+      final dir = Directory(downloadDir);
+      if (await dir.exists()) {
+        clearedSize = await getDirectorySize(dir);
+        await dir.delete(recursive: true);
+        await dir.create(recursive: true);
+      }
+    } catch (e) {
+      Logger.print('Error clearing download files: $e');
+    }
+    return clearedSize;
+  }
+
+  /// 清理图片缓存
+  static Future<int> clearImageCache() async {
+    int clearedSize = 0;
+    try {
+      final cacheDir = await getTemporaryDirectory();
+      clearedSize = await getDirectorySize(cacheDir);
+      final cacheManager = DefaultCacheManager();
+      await cacheManager.emptyCache();
+    } catch (e) {
+      Logger.print('Error clearing image cache: $e');
+    }
+    return clearedSize;
+  }
+
+  /// 清理应用缓存目录
+  static Future<int> clearApplicationCache() async {
+    int clearedSize = 0;
+    try {
+      final cacheDir = await getTemporaryDirectory();
+      clearedSize = await getDirectorySize(cacheDir);
+      await cacheDir.delete(recursive: true);
+      await cacheDir.create(recursive: true);
+    } catch (e) {
+      Logger.print('Error clearing application cache: $e');
+    }
+    return clearedSize;
+  }
+
+  /// 获取各部分缓存大小
+  static Future<Map<String, int>> getCacheSizes() async {
+    Map<String, int> sizes = {};
+    try {
+      // 临时文件
+      int tempSize = 0;
+      final tempDirs = ['pic', 'video', 'apk', 'voice'];
+      for (String dirName in tempDirs) {
+        final dirPath = await createTempDir(dir: dirName);
+        tempSize += await getDirectorySize(Directory(dirPath));
+      }
+      sizes['temp'] = tempSize;
+
+      // 下载文件
+      final downloadDir = await getDownloadFileDir();
+      sizes['download'] = await getDirectorySize(Directory(downloadDir));
+
+      // 应用缓存
+      final cacheDir = await getTemporaryDirectory();
+      sizes['cache'] = await getDirectorySize(cacheDir);
+    } catch (e) {
+      Logger.print('Error getting cache sizes: $e');
+    }
+    return sizes;
+  }
 
   /// 消息列表超过5分钟则显示时间
   static List<Message> calChatTimeInterval(List<Message> list,
