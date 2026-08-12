@@ -206,12 +206,60 @@ class Config {
       Logger.print("ℹ️ 无缓存线路");
     }
 
-    // -------- 手动模式：不在启动阶段自动切线 --------
-    Logger.print("---------------- 手动模式：跳过DNS/OSS自动切线 ----------------");
-    Logger.print("ℹ️ 可在登录页点击“切换线路”手动选择线路");
+    // -------- 第二步：DNS 查询（优先）--------
+    Logger.print("---------------- 步骤1: DNS 查询 ----------------");
+    List<String> dnsHosts = [];
+    try {
+      dnsHosts = await _fetchHostsFromDNS();
+      if (dnsHosts.isNotEmpty) {
+        Logger.print("✅ DNS 查询成功，获取到 ${dnsHosts.length} 条线路");
 
-    // -------- 默认兜底 --------
-    Logger.print("---------------- 步骤2: 默认域名 ----------------");
+        // 逐个校验 DNS 返回的线路
+        for (final host in dnsHosts) {
+          final ok = await _quickCheck(host);
+          if (ok) {
+            _applyHost(host);
+            Logger.print("✅ DNS 线路可用: $host");
+            Logger.print("================ _initHost END ==================");
+            return;
+          }
+        }
+        Logger.print("⚠️ DNS 返回的线路均不可用");
+      } else {
+        Logger.print("❌ DNS 查询无结果");
+      }
+    } catch (e) {
+      Logger.print("❌ DNS 查询异常: $e");
+    }
+
+    // -------- 第三步：OSS TXT 文件（备用）--------
+    Logger.print("---------------- 步骤2: OSS TXT 文件 ----------------");
+    List<String> ossHosts = [];
+    try {
+      ossHosts = await _fetchHostList();
+      if (ossHosts.isNotEmpty) {
+        Logger.print("✅ OSS 获取成功，获取到 ${ossHosts.length} 条线路");
+
+        // 逐个校验 OSS 返回的线路
+        for (final host in ossHosts) {
+          final ok = await _quickCheck(host);
+          if (ok) {
+            _applyHost(host);
+            Logger.print("✅ OSS 线路可用: $host");
+            Logger.print("================ _initHost END ==================");
+            return;
+          }
+        }
+        Logger.print("⚠️ OSS 返回的线路均不可用");
+      } else {
+        Logger.print("❌ OSS 获取无结果");
+      }
+    } catch (e) {
+      Logger.print("❌ OSS 获取异常: $e");
+    }
+
+    // -------- 第四步：默认兜底 --------
+    Logger.print("---------------- 步骤3: 默认兜底 ----------------");
     final defaultOk = await _quickCheck(_defaultHost);
     if (defaultOk) {
       _applyHost(_defaultHost);
@@ -220,6 +268,7 @@ class Config {
       _applyHost(_defaultHost);
       Logger.print("❌ 默认域名也不通，但仍然应用: $_defaultHost（避免空 host）");
     }
+
     Logger.print("================ _initHost END ==================");
   }
 
@@ -311,14 +360,11 @@ class Config {
 
   // ================== 国内 DNS TXT 查询 ==================
   static Future<List<String>> _fetchHostsFromDNS() async {
-    final Set<String> allHosts = {};
-    bool globalResolved = false;
-
+    // 遍历所有 DNS 配置域名
     for (final domain in _dnsConfigDomains) {
-      if (globalResolved) break;
+      Logger.print("📡 尝试 DNS 查询: $domain");
 
-      bool domainResolved = false;
-
+      // 遍历所有 DoH 服务器
       for (final dohUrl in _dohServers) {
         try {
           final uri = Uri.parse(dohUrl).replace(queryParameters: {
@@ -332,7 +378,10 @@ class Config {
           request.headers.set('accept', 'application/dns-json');
 
           final response = await request.close();
-          if (response.statusCode != 200) continue;
+          if (response.statusCode != 200) {
+            client.close(force: true);
+            continue;
+          }
 
           final body = await response.transform(utf8.decoder).join();
           client.close(force: true);
@@ -368,64 +417,97 @@ class Config {
             hosts = _dedupeHosts(hosts);
 
             if (hosts.isNotEmpty) {
-              allHosts.addAll(hosts);
-              domainResolved = true;
-              globalResolved = true; // ⭐ 核心：全局跳出
-
-              Logger.print("✅ DNS成功: $domain -> $hosts");
-              break;
+              Logger.print("✅ DNS 查询成功: $domain -> ${hosts.length} 条线路");
+              // ⭐ 立即返回，不再继续查询
+              return hosts;
             }
           }
-
-          if (domainResolved) break;
-        } catch (_) {}
+        } catch (e) {
+          Logger.print("⚠️ DoH 查询失败: $dohUrl, error: $e");
+        }
       }
     }
 
-    final deduped = _dedupeHosts(allHosts);
-    Logger.print("📡 DNS最终线路: ${deduped.length}");
-    return deduped;
+    Logger.print("❌ 所有 DNS 查询均失败");
+    return [];
   }
 
   /// 手动切换线路时使用：优先 DNS，DNS 无结果时才回退 OSS。
   static Future<List<ConfigLineOption>> fetchManualLineOptions() async {
     List<String> candidates = [];
 
+    // -------- 第一步：DNS 查询（优先）--------
     try {
       candidates = await _fetchHostsFromDNS();
       if (candidates.isNotEmpty) {
-        Logger.print('手动线路来源: DNS (${candidates.length})');
+        Logger.print('✅ 手动线路来源: DNS (${candidates.length})');
+
+        // DNS 返回的线路直接使用，不需要再走 OSS
+        candidates = _dedupeHosts(candidates);
+        if (candidates.isNotEmpty) {
+          return candidates
+              .map(
+                (host) => ConfigLineOption(
+                  host: host,
+                  success: true,
+                  duration: -1,
+                ),
+              )
+              .toList();
+        }
+      } else {
+        Logger.print('❌ 手动线路 DNS 无结果');
       }
     } catch (e) {
-      Logger.print("手动线路 DNS 拉取异常: $e");
+      Logger.print("❌ 手动线路 DNS 拉取异常: $e");
     }
 
-    if (candidates.isEmpty) {
-      try {
-        candidates = await _fetchHostList();
+    // -------- 第二步：OSS TXT 文件（备用）--------
+    try {
+      candidates = await _fetchHostList();
+      if (candidates.isNotEmpty) {
+        Logger.print('✅ 手动线路来源: OSS (${candidates.length})');
+
+        candidates = _dedupeHosts(candidates);
         if (candidates.isNotEmpty) {
-          Logger.print('手动线路来源: OSS (${candidates.length})');
+          return candidates
+              .map(
+                (host) => ConfigLineOption(
+                  host: host,
+                  success: true,
+                  duration: -1,
+                ),
+              )
+              .toList();
         }
-      } catch (e) {
-        Logger.print("手动线路 OSS 拉取异常: $e");
+      } else {
+        Logger.print('❌ 手动线路 OSS 无结果');
       }
+    } catch (e) {
+      Logger.print("❌ 手动线路 OSS 拉取异常: $e");
     }
 
-    candidates = _dedupeHosts(candidates);
-
-    if (candidates.isEmpty) {
-      return [];
-    }
-
-    return candidates
-        .map(
-          (host) => ConfigLineOption(
-            host: host,
-            success: true,
-            duration: -1,
-          ),
+    // -------- 第三步：默认兜底 --------
+    Logger.print("⚠️ 所有来源均无结果，使用默认线路");
+    final defaultOk = await _quickCheck(_defaultHost);
+    if (defaultOk) {
+      return [
+        ConfigLineOption(
+          host: _defaultHost,
+          success: true,
+          duration: -1,
         )
-        .toList();
+      ];
+    } else {
+      // 即使默认线路不通也返回，让用户知道有选项
+      return [
+        ConfigLineOption(
+          host: _defaultHost,
+          success: false,
+          duration: -1,
+        )
+      ];
+    }
   }
 
   /// 后台测速：每完成一条就回调一次，便于界面实时刷新。

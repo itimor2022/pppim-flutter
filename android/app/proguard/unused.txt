@@ -16320,6 +16320,7 @@ com.arthenica.ffmpegkit.flutter.FFmpegKitFlutterPlugin:
     public static final int SESSION_TYPE_MEDIA_INFORMATION
     public static final int WRITABLE_REQUEST_CODE
     private static final int asyncConcurrencyLimit
+    public static void registerWith(io.flutter.plugin.common.PluginRegistry$Registrar)
 com.arthenica.ffmpegkit.flutter.R
 com.arthenica.smartexception.AbstractExceptions:
     public static final boolean DEFAULT_IGNORE_ALL_CAUSES
