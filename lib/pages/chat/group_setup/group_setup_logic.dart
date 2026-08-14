@@ -450,19 +450,23 @@ class GroupSetupLogic extends GetxController {
       rightText: StrRes.clearAll,
     ));
     if (confirm == true) {
-      try {
-        await LoadingView.singleton.wrap(
-          asyncFunction: () => OpenIM.iMManager.conversationManager
-              .clearConversationAndDeleteAllMsg(
-            conversationID: conversationID,
-          ),
-        );
-        IMViews.showToast(StrRes.clearSuccessfully);
-        Get.back(result: 'clearHistory');
-      } catch (e) {
-        print('clearChatHistory error: $e');
-        IMViews.showToast('清空失败');
-      }
+      // 先立即清空本地 UI 消息列表 + 返回上一页,提升用户感知
+      chatLogic.clearAllMessage();
+      IMViews.showToast(StrRes.clearSuccessfully);
+      Get.back(result: 'clearHistory');
+      // 异步同步服务端,失败也不影响本地清空结果
+      unawaited(_syncClearToServer());
+    }
+  }
+
+  Future<void> _syncClearToServer() async {
+    try {
+      await OpenIM.iMManager.conversationManager.clearConversationAndDeleteAllMsg(
+        conversationID: conversationID,
+      );
+    } catch (e, st) {
+      // 服务端同步失败时仅记录日志,本地清空结果对用户已生效
+      print('clearChatHistory server sync error: $e\n$st');
     }
   }
 
