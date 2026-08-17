@@ -554,7 +554,7 @@ class ChatLogic extends GetxController {
         }
       }
       if (!allowed) {
-        IMViews.showToast('全员禁言中，仅支持查我、查流水、查输赢、清屏等指令');
+        IMViews.showToast('全员禁言中');
         return;
       }
     }
@@ -747,7 +747,7 @@ class ChatLogic extends GetxController {
       if (message.contentType != MessageType.text &&
           message.contentType != MessageType.atText &&
           message.contentType != MessageType.quote) {
-        IMViews.showToast('全员禁言中，仅限查分指令');
+        IMViews.showToast('全员禁言中');
         return;
       }
     }
@@ -1222,7 +1222,7 @@ class ChatLogic extends GetxController {
   /// 发送红包
   void onTapRedPacket() async {
     if (isGroupMuted) {
-      IMViews.showToast('全员禁言中，仅限查分指令');
+      IMViews.showToast('全员禁言中');
       return;
     }
     final result = await Get.toNamed(
@@ -2419,7 +2419,7 @@ class ChatLogic extends GetxController {
 
   /// 禁言提示
   String? get hintText =>
-      isMuted ? StrRes.youMuted : (isGroupMuted ? "全员禁言中，仅限查分指令" : null);
+      isMuted ? StrRes.youMuted : (isGroupMuted ? "全员禁言中" : null);
 
   /// 禁言后 清除所有状态
   void _mutedClearAllInput() {
