@@ -37,7 +37,7 @@ class IMController extends GetxController with IMCallback, OpenIMLive {
       apiAddr: Config.imApiUrl,
       wsAddr: Config.imWsUrl,
       dataDir: Config.cachePath,
-      logLevel: 6,
+      logLevel: 0,
       logFilePath: Config.cachePath,
       listener: OnConnectListener(
         onConnecting: () {
